@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoginService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">login-ci-demo</a> &gt; <a href="index.source.html" class="el_package">com.example.login</a> &gt; <span class="el_source">LoginService.java</span></div><h1>LoginService.java</h1><pre class="source lang-java linenums">package com.example.login;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
+/**
+ * Service class for login validation
+ */
+<span class="fc" id="L10">public class LoginService {</span>
+
+    /**
+     * Validates all login credentials
+     */
+    public boolean validateLogin(String username, String email, String mobile, String password, String dob) {
+<span class="fc bfc" id="L16" title="All 2 branches covered.">        return isValidUsername(username) &amp;&amp;</span>
+<span class="fc bfc" id="L17" title="All 2 branches covered.">               isValidEmail(email) &amp;&amp;</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">               isValidMobile(mobile) &amp;&amp;</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">               isValidPassword(password) &amp;&amp;</span>
+<span class="fc bfc" id="L20" title="All 2 branches covered.">               isValidDOB(dob);</span>
+    }
+
+    /**
+     * Validates username (at least 3 characters)
+     */
+    public boolean isValidUsername(String username) {
+<span class="fc bfc" id="L27" title="All 4 branches covered.">        return username != null &amp;&amp; username.length() &gt;= 3;</span>
+    }
+
+    /**
+     * Validates email format
+     */
+    public boolean isValidEmail(String email) {
+<span class="pc bpc" id="L34" title="1 of 4 branches missed.">        return email != null &amp;&amp; email.matches(&quot;^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$&quot;);</span>
+    }
+
+    /**
+     * Validates mobile number (10 digits)
+     */
+    public boolean isValidMobile(String mobile) {
+<span class="pc bpc" id="L41" title="1 of 4 branches missed.">        return mobile != null &amp;&amp; mobile.matches(&quot;^\\d{10}$&quot;);</span>
+    }
+
+    /**
+     * Validates password (at least 8 characters with at least one digit, 
+     * one lowercase, one uppercase, and one special character)
+     */
+    public boolean isValidPassword(String password) {
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        return password != null &amp;&amp; </span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">               password.length() &gt;= 8 &amp;&amp; </span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">               password.matches(&quot;.*\\d.*&quot;) &amp;&amp; // at least one digit</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">               password.matches(&quot;.*[a-z].*&quot;) &amp;&amp; // at least one lowercase</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">               password.matches(&quot;.*[A-Z].*&quot;) &amp;&amp; // at least one uppercase</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">               password.matches(&quot;.*[!@#$%^&amp;*()_+\\-=\\[\\]{};':\&quot;\\\\|,.&lt;&gt;/?].*&quot;); // at least one special char</span>
+    }
+
+    /**
+     * Validates date of birth (format: YYYY-MM-DD)
+     */
+    public boolean isValidDOB(String dob) {
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (dob == null) return false;</span>
+        
+        try {
+<span class="fc" id="L64">            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd&quot;);</span>
+<span class="fc" id="L65">            LocalDate.parse(dob, formatter);</span>
+<span class="fc" id="L66">            return true;</span>
+<span class="fc" id="L67">        } catch (DateTimeParseException e) {</span>
+<span class="fc" id="L68">            return false;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
