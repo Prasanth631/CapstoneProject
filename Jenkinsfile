@@ -3,17 +3,18 @@ pipeline {
 
     tools {
         maven 'MAVEN_HOME'
-        jdk 'JDK11'
+        jdk 'JDK17' // Updated to match Dockerfile
     }
 
     environment {
         EMAIL_RECIPIENTS = '2200030631cseh@gmail.com'
         DOCKERHUB_CREDENTIALS = 'docker-hub-creds'
         DOCKER_IMAGE = 'prasanth631/capstone_pro'
+        DOCKER_BUILDKIT = '1' // Enable BuildKit for better platform support
     }
 
     triggers {
-        pollSCM('H/5 * * * *')  // check every 5 mins; better: use GitHub webhook
+        pollSCM('H/5 * * * *')
     }
 
     stages {
@@ -35,50 +36,68 @@ pipeline {
             }
         }
 
-        stage('Docker Cleanup & Build') {
+        stage('Docker Cleanup') {
             steps {
                 script {
-                    // Safer cleanup commands that don't fail if no containers/images exist
-                    bat """
+                    // Enhanced cleanup with better error handling
+                    bat '''
                         @echo off
-                        echo "Stopping containers..."
-                        docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest" > temp_containers.txt 2>nul
-                        if exist temp_containers.txt (
-                            for /f %%i in (temp_containers.txt) do (
-                                echo Stopping container %%i
-                                docker stop %%i 2>nul || echo Container %%i already stopped
-                            )
+                        echo "=== Docker Cleanup Phase ==="
+                        
+                        echo "Stopping running containers..."
+                        for /f "delims=" %%i in ('docker ps -q --filter "ancestor=%DOCKER_IMAGE%:latest" 2^>nul') do (
+                            echo Stopping container %%i
+                            docker stop %%i
                         )
-                        del temp_containers.txt 2>nul
-
-                        echo "Removing containers..."
-                        docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest" > temp_containers.txt 2>nul
-                        if exist temp_containers.txt (
-                            for /f %%i in (temp_containers.txt) do (
-                                echo Removing container %%i
-                                docker rm %%i 2>nul || echo Container %%i already removed
-                            )
+                        
+                        echo "Removing stopped containers..."
+                        for /f "delims=" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%" 2^>nul') do (
+                            echo Removing container %%i
+                            docker rm %%i
                         )
-                        del temp_containers.txt 2>nul
-
+                        
                         echo "Removing old images..."
-                        docker images %DOCKER_IMAGE% -q > temp_images.txt 2>nul
-                        if exist temp_images.txt (
-                            for /f %%i in (temp_images.txt) do (
-                                echo Removing image %%i
-                                docker rmi -f %%i 2>nul || echo Image %%i already removed
-                            )
+                        for /f "delims=" %%i in ('docker images %DOCKER_IMAGE% -q 2^>nul') do (
+                            echo Removing image %%i
+                            docker rmi -f %%i
                         )
-                        del temp_images.txt 2>nul
-                        echo "Cleanup completed"
-                    """
+                        
+                        echo "Cleanup completed successfully"
+                        exit /b 0
+                    '''
+                }
+            }
+        }
 
-                    // Build and push Docker image
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
-                        def app = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
-                        app.push()
-                        app.push("latest")
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    try {
+                        // Build with explicit platform
+                        bat "docker build --platform linux/amd64 -t ${DOCKER_IMAGE}:${env.BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                        
+                        // Push to DockerHub
+                        docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
+                            bat "docker push ${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
+                            bat "docker push ${DOCKER_IMAGE}:latest"
+                        }
+                        
+                        echo "Docker build and push completed successfully"
+                        
+                    } catch (Exception e) {
+                        echo "Docker build failed: ${e.getMessage()}"
+                        throw e
                     }
+                }
+            }
+        }
+
+        stage('Verify Docker Image') {
+            steps {
+                script {
+                    // Verify the image was created successfully
+                    bat "docker inspect ${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
+                    echo "Docker image verification completed"
                 }
             }
         }
@@ -96,6 +115,7 @@ BUILD SUMMARY
 - Jenkins URL: ${env.BUILD_URL}
 - Triggered By: ${currentBuild.getBuildCauses()[0].shortDescription}
 - Docker Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
+- Platform: linux/amd64
 """
                     writeFile file: 'build-summary.txt', text: summary
                 }
@@ -120,6 +140,7 @@ The build has completed with the following status:
 - Branch: main
 - View Console Output: ${env.BUILD_URL}console
 - Docker Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
+- Platform: linux/amd64
 
 The detailed summary is attached.
 
@@ -133,6 +154,18 @@ Jenkins
                     attachmentsPattern: 'build-summary.txt',
                     mimeType: 'text/plain'
                 )
+            }
+        }
+        
+        failure {
+            script {
+                // Additional debugging info on failure
+                bat '''
+                    echo "=== DEBUG INFO ==="
+                    docker version
+                    docker images
+                    docker ps -a
+                '''
             }
         }
     }
