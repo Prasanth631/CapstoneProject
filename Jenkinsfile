@@ -11,8 +11,6 @@ pipeline {
         DOCKERHUB_CREDENTIALS = 'docker-hub-creds'
         DOCKER_IMAGE = 'prasanth631/capstone_pro'
         CONTAINER_NAME = 'capstone_app'
-        HOST_PORT = '9090'
-        CONTAINER_PORT = '8080'
     }
 
     triggers {
@@ -43,13 +41,21 @@ pipeline {
                 script {
                     bat """
                         @echo off
-                        echo Stopping old container if exists...
-                        docker stop %CONTAINER_NAME% 2>nul || echo No container to stop
-                        docker rm %CONTAINER_NAME% 2>nul || echo No container to remove
+                        echo === Cleaning old containers and images ===
                         
-                        echo Removing old images...
+                        rem Stop and remove old container if exists
+                        docker ps -aq --filter "name=%CONTAINER_NAME%" > tmp_ids.txt
+                        for /f %%i in (tmp_ids.txt) do (
+                            echo Stopping container %%i
+                            docker stop %%i
+                            echo Removing container %%i
+                            docker rm -f %%i
+                        )
+                        del tmp_ids.txt
+
+                        rem Remove old image
                         docker rmi -f %DOCKER_IMAGE%:latest 2>nul || echo No old image to remove
-                        echo Cleanup completed
+                        echo === Cleanup completed ===
                     """
 
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
@@ -66,8 +72,8 @@ pipeline {
                 script {
                     bat """
                         @echo off
-                        echo Running new container on port %HOST_PORT%...
-                        docker run -d --name %CONTAINER_NAME% -p %HOST_PORT%:%CONTAINER_PORT% %DOCKER_IMAGE%:latest
+                        echo Running new container on port 9090...
+                        docker run -d --name %CONTAINER_NAME% -p 9090:8080 %DOCKER_IMAGE%:latest
                     """
                 }
             }
@@ -86,7 +92,7 @@ BUILD SUMMARY
 - Jenkins URL: ${env.BUILD_URL}
 - Triggered By: ${currentBuild.getBuildCauses()[0].shortDescription}
 - Docker Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
-- Container: ${CONTAINER_NAME} (running on port ${HOST_PORT})
+- Container: ${CONTAINER_NAME} (running on port 9090)
 """
                     writeFile file: 'build-summary.txt', text: summary
                 }
@@ -111,7 +117,7 @@ The build has completed with the following status:
 - Branch: main
 - View Console Output: ${env.BUILD_URL}console
 - Docker Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
-- Running Container: ${CONTAINER_NAME} (http://localhost:${HOST_PORT})
+- Running Container: ${CONTAINER_NAME} (http://localhost:9090)
 
 The detailed summary is attached.
 
