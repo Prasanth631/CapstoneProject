@@ -13,7 +13,7 @@ pipeline {
     }
 
     triggers {
-        pollSCM('* * * * *') 
+        pollSCM('H/5 * * * *')  // check every 5 mins; better: use GitHub webhook
     }
 
     stages {
@@ -25,7 +25,6 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                bat 'mvn -version'
                 bat 'mvn clean install'
             }
         }
@@ -42,7 +41,7 @@ pipeline {
                     bat """
                         for /f "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest"') do docker stop %%i
                         for /f "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest"') do docker rm %%i
-                        for /f "tokens=*" %%i in ('docker images %DOCKER_IMAGE% --format "{{.ID}}"') do docker rmi -f %%i
+                        for /f "tokens=*" %%i in ('docker images %DOCKER_IMAGE% -q') do docker rmi -f %%i
                     """
 
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
