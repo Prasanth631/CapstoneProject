@@ -35,15 +35,45 @@ pipeline {
             }
         }
 
-        stage('Docker Build & Push') {
+        stage('Docker Cleanup & Build') {
             steps {
                 script {
+                    // Safer cleanup commands that don't fail if no containers/images exist
                     bat """
-                        for /f "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest"') do docker stop %%i
-                        for /f "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest"') do docker rm %%i
-                        for /f "tokens=*" %%i in ('docker images %DOCKER_IMAGE% -q') do docker rmi -f %%i
+                        @echo off
+                        echo "Stopping containers..."
+                        docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest" > temp_containers.txt 2>nul
+                        if exist temp_containers.txt (
+                            for /f %%i in (temp_containers.txt) do (
+                                echo Stopping container %%i
+                                docker stop %%i 2>nul || echo Container %%i already stopped
+                            )
+                        )
+                        del temp_containers.txt 2>nul
+
+                        echo "Removing containers..."
+                        docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest" > temp_containers.txt 2>nul
+                        if exist temp_containers.txt (
+                            for /f %%i in (temp_containers.txt) do (
+                                echo Removing container %%i
+                                docker rm %%i 2>nul || echo Container %%i already removed
+                            )
+                        )
+                        del temp_containers.txt 2>nul
+
+                        echo "Removing old images..."
+                        docker images %DOCKER_IMAGE% -q > temp_images.txt 2>nul
+                        if exist temp_images.txt (
+                            for /f %%i in (temp_images.txt) do (
+                                echo Removing image %%i
+                                docker rmi -f %%i 2>nul || echo Image %%i already removed
+                            )
+                        )
+                        del temp_images.txt 2>nul
+                        echo "Cleanup completed"
                     """
 
+                    // Build and push Docker image
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
                         def app = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
                         app.push()
