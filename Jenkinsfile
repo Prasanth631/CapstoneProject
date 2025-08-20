@@ -8,8 +8,8 @@ pipeline {
 
     environment {
         EMAIL_RECIPIENTS = '2200030631cseh@gmail.com'
-        DOCKERHUB_CREDENTIALS = 'docker-hub-creds'  // Jenkins credential ID
-        DOCKER_IMAGE = 'prasanth631/capstone-app'
+        DOCKERHUB_CREDENTIALS = 'docker-hub-creds'
+        DOCKER_IMAGE = 'prasanth631/capstone_pro'
     }
 
     triggers {
@@ -39,7 +39,6 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    // Clean up old containers and images for this app on Windows
                     bat """
                         for /f "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest"') do docker stop %%i
                         for /f "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest"') do docker rm %%i
@@ -54,7 +53,6 @@ pipeline {
                 }
             }
         }
-
 
         stage('Save Build Summary') {
             steps {
