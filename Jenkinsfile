@@ -39,11 +39,11 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    // Clean up old containers and images for this app
+                    // Clean up old containers and images for this app on Windows
                     bat """
-                        docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest" | findstr . && docker stop $(docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest") || echo No running containers
-                        docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest" | findstr . && docker rm $(docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest") || echo No old containers
-                        docker images %DOCKER_IMAGE% --format "{{.ID}}" | findstr . && docker rmi -f $(docker images %DOCKER_IMAGE% --format "{{.ID}}") || echo No old images
+                        for /f "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest"') do docker stop %%i
+                        for /f "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest"') do docker rm %%i
+                        for /f "tokens=*" %%i in ('docker images %DOCKER_IMAGE% --format "{{.ID}}"') do docker rmi -f %%i
                     """
 
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
@@ -54,6 +54,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Save Build Summary') {
             steps {
