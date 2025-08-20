@@ -39,10 +39,17 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
+                    // Clean up old containers and images for this app
+                    bat """
+                        docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest" | findstr . && docker stop $(docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest") || echo No running containers
+                        docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest" | findstr . && docker rm $(docker ps -a -q --filter "ancestor=%DOCKER_IMAGE%:latest") || echo No old containers
+                        docker images %DOCKER_IMAGE% --format "{{.ID}}" | findstr . && docker rmi -f $(docker images %DOCKER_IMAGE% --format "{{.ID}}") || echo No old images
+                    """
+
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
                         def app = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
                         app.push()
-                        app.push("latest") // always keep a latest tag
+                        app.push("latest")
                     }
                 }
             }

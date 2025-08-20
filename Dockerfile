@@ -1,5 +1,13 @@
-FROM openjdk:17-jdk-slim
+# Stage 1: Build JAR
+FROM maven:3.9.9-eclipse-temurin-22 AS builder
 WORKDIR /app
-COPY target/*.jar app.jar
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Stage 2: Run JAR
+FROM openjdk:22-jdk-slim
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
