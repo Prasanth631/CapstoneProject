@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Deployment Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --secondary-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --background-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-background: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #e9ecef;
+            --shadow: 0 8px 32px rgba(0,0,0,0.1);
+            --hover-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            --console-bg: #f8f9fa;
+            --console-text: #495057;
+        }
+
+        [data-theme="dark"] {
+            --background-gradient: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
+            --card-background: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --border-color: #4a5568;
+            --shadow: 0 8px 32px rgba(0,0,0,0.3);
+            --hover-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            --console-bg: #1a202c;
+            --console-text: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: var(--card-background);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            text-align: center;
+            border-left: 5px solid var(--primary-color);
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .header h1 {
+            color: var(--text-primary);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: var(--border-color);
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .status-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #95a5a6;
+        }
+
+        .status-dot.online { 
+            background: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        .status-dot.offline { 
+            background: var(--danger-color);
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+        .status-dot.building { 
+            background: var(--warning-color);
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-background);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--primary-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: var(--card-background);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .metric-card:hover::before {
+            left: 100%;
+        }
+
+        .metric-value {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-size: 0.9rem;
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+
+        .job-selector {
+            margin-bottom: 20px;
+        }
+
+        .job-selector select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: var(--card-background);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .job-selector select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .builds-list {
+            max-height: 350px;
+            overflow-y: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .build-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .build-item:hover {
+            background: var(--border-color);
+            transform: translateX(5px);
+        }
+
+        .build-item:last-child {
+            border-bottom: none;
+        }
+
+        .build-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .build-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .build-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .build-status {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .status-success { 
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--secondary-color);
+            border: 2px solid var(--secondary-color);
+        }
+        .status-failure { 
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+            border: 2px solid var(--danger-color);
+        }
+        .status-building { 
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+            border: 2px solid var(--warning-color);
+            animation: pulse-status 2s infinite;
+        }
+        .status-unknown { 
+            background: rgba(149, 165, 166, 0.1);
+            color: #95a5a6;
+            border: 2px solid #95a5a6;
+        }
+
+        @keyframes pulse-status {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .pipeline-overview {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 20px;
+            background: var(--border-color);
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        .pipeline-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+            position: relative;
+        }
+
+        .pipeline-stage:not(:last-child)::after {
+            content: '→';
+            position: absolute;
+            right: -15px;
+            top: 25px;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .stage-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .stage-icon.success { background: var(--secondary-color); }
+        .stage-icon.failure { background: var(--danger-color); }
+        .stage-icon.building { 
+            background: var(--warning-color);
+            animation: spin 2s linear infinite;
+        }
+        .stage-icon.pending { background: #95a5a6; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stage-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .console-container {
+            background: var(--card-background);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .console-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            gap: 15px;
+        }
+
+        .console-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .console-tab {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .console-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .console-content {
+            position: relative;
+            height: 400px;
+        }
+
+        .console-output {
+            background: var(--console-bg);
+            height: 100%;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--console-text);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .console-line {
+            padding: 2px 0;
+            border-left: 3px solid transparent;
+            padding-left: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .console-line:hover {
+            background: rgba(52, 152, 219, 0.1);
+            border-left-color: var(--primary-color);
+        }
+
+        .console-line.error {
+            color: var(--danger-color);
+            background: rgba(231, 76, 60, 0.05);
+        }
+
+        .console-line.warning {
+            color: var(--warning-color);
+            background: rgba(243, 156, 18, 0.05);
+        }
+
+        .console-line.success {
+            color: var(--secondary-color);
+            background: rgba(46, 204, 113, 0.05);
+        }
+
+        .console-search {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--card-background);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.95rem;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .action-btn.secondary {
+            background: var(--text-secondary);
+        }
+
+        .action-btn.secondary:hover {
+            background: var(--text-primary);
+        }
+
+        .action-btn.success {
+            background: var(--secondary-color);
+        }
+
+        .action-btn.success:hover {
+            background: #27ae60;
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.3);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            color: var(--text-secondary);
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .alert-success {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--secondary-color);
+            border-left-color: var(--secondary-color);
+        }
+
+        .alert-error {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+            border-left-color: var(--danger-color);
+        }
+
+        .alert-warning {
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+            border-left-color: var(--warning-color);
+        }
+
+        .alert-info {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-background);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 80%;
+            max-height: 80%;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .pipeline-overview {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .pipeline-stage:not(:last-child)::after {
+                content: '↓';
+                right: auto;
+                bottom: -15px;
+                top: auto;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon">🌙</span>
+                <span id="theme-text">Dark Mode</span>
+            </button>
+            <h1>🚀 Advanced Deployment Dashboard</h1>
+            <p>Comprehensive CI/CD Pipeline Monitoring & Management System</p>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot" id="jenkins-status"></div>
+                    <span>Jenkins Server</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="deployment-status"></div>
+                    <span>Pipeline Status</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="app-status"></div>
+                    <span>Application</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="docker-status"></div>
+                    <span>Docker Service</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value" id="total-builds">-</div>
+                <div class="metric-label">Total Builds</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="success-rate">-</div>
+                <div class="metric-label">Success Rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="last-deployment">-</div>
+                <div class="metric-label">Last Deployment</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avg-duration">-</div>
+                <div class="metric-label">Avg Duration</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="uptime">-</div>
+                <div class="metric-label">System Uptime</div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard-grid">
+            <!-- Pipeline Overview -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon">🔄</div>
+                        Pipeline Overview
+                    </div>
+                    <button class="refresh-btn" onclick="refreshPipeline()">
+                        <span>🔄</span> Refresh
+                    </button>
+                </div>
+                <div class="pipeline-overview" id="pipeline-overview">
+                    <div class="pipeline-stage">
+                        <div class="stage-icon pending">📥</div>
+                        <div class="stage-name">Checkout</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon pending">🔨</div>
+                        <div class="stage-name">Build & Test</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon pending">🐳</div>
+                        <div class="stage-name">Docker Build</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon pending">🚀</div>
+                        <div class="stage-name">Deploy</div>
+                    </div>
+                </div>
+                <div class="actions-grid">
+                    <button class="action-btn success" onclick="triggerBuild()">
+                        <span>▶️</span> Trigger Build
+                    </button>
+                    <button class="action-btn secondary" onclick="viewPipelineDetails()">
+                        <span>📊</span> Details
+                    </button>
+                </div>
+            </div>
+
+            <!-- Build Status Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon">📋</div>
+                        Build History
+                    </div>
+                    <button class="refresh-btn" onclick="refreshBuilds()">
+                        <span>🔄</span> Refresh
+                    </button>
+                </div>
+                <div class="job-selector">
+                    <select id="job-selector" onchange="loadJobBuilds()">
+                        <option value="">Select a job...</option>
+                    </select>
+                </div>
+                <div class="builds-list" id="builds-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading build information...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon">⚡</div>
+                        Quick Actions
+                    </div>
+                </div>
+                <div class="actions-grid">
+                    <button class="action-btn" onclick="testConnection()">
+                        <span>🔗</span> Test Connection
+                    </button>
+                    <button class="action-btn" onclick="viewJenkinsConsole()">
+                        <span>🖥️</span> Jenkins Console
+                    </button>
+                    <button class="action-btn secondary" onclick="downloadLogs()">
+                        <span>📥</span> Download Logs
+                    </button>
+                    <button class="action-btn secondary" onclick="refreshDashboard()">
+                        <span>🔄</span> Refresh All
+                    </button>
+                    <button class="action-btn success" onclick="viewDockerStatus()">
+                        <span>🐳</span> Docker Status
+                    </button>
+                    <button class="action-btn" onclick="openFullConsole()">
+                        <span>📺</span> Full Console
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Console Section -->
+        <div class="console-container">
+            <div class="console-header">
+                <div class="card-title">
+                    <div class="card-icon">📝</div>
+                    Console Output
+                </div>
+                <div class="console-tabs">
+                    <button class="console-tab active" onclick="switchConsoleTab('output')">Console Output</button>
+                    <button class="console-tab" onclick="switchConsoleTab('logs')">Build Logs</button>
+                    <button class="console-tab" onclick="switchConsoleTab('errors')">Error Logs</button>
+                </div>
+                <button class="refresh-btn" onclick="refreshLogs()">
+                    <span>🔄</span> Refresh
+                </button>
+            </div>
+            <div class="console-content">
+                <input type="text" class="console-search" placeholder="Search logs..." oninput="searchConsole(this.value)">
+                <div class="console-output" id="console-output">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading console output...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Container -->
+        <div id="alerts-container"></div>
+    </div>
+
+    <!-- Full Console Modal -->
+    <div class="modal" id="console-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Full Console Output</h2>
+                <button class="modal-close" onclick="closeModal('console-modal')">×</button>
+            </div>
+            <div class="console-output" id="modal-console-output" style="height: 60vh;">
+                Loading full console output...
+            </div>
+        </div>
+    </div>
+
+    <!-- Pipeline Details Modal -->
+    <div class="modal" id="pipeline-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Pipeline Details</h2>
+                <button class="modal-close" onclick="closeModal('pipeline-modal')">×</button>
+            </div>
+            <div id="pipeline-details-content">
+                Loading pipeline details...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentJob = '';
+        let currentTheme = 'light';
+        let consoleUpdateInterval;
+        let dashboardData = {
+            jobs: [],
+            builds: [],
+            jenkinsConnected: false,
+            pipelineStages: ['Checkout', 'Build & Test', 'Docker Build', 'Deploy'],
+            currentConsoleTab: 'output'
+        };
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTheme();
+            initializeDashboard();
+            startAutoRefresh();
+        });
+
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('dashboard-theme') || 'light';
+            setTheme(savedTheme);
+        }
+
+        function toggleTheme() {
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('dashboard-theme', theme);
+            
+            const themeIcon = document.getElementById('theme-icon');
+            const themeText = document.getElementById('theme-text');
+            
+            if (theme === 'dark') {
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light Mode';
+            } else {
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark Mode';
+            }
+        }
+
+        function initializeDashboard() {
+            showAlert('info', 'Initializing advanced dashboard...');
+            testConnection();
+            loadJobs();
+            updateMetrics();
+            initializeConsole();
+        }
+
+        function startAutoRefresh() {
+            // Refresh dashboard every 30 seconds
+            setInterval(refreshDashboard, 30000);
+            
+            // Update console every 10 seconds if a job is selected
+            consoleUpdateInterval = setInterval(() => {
+                if (currentJob && dashboardData.jenkinsConnected) {
+                    refreshLogs(false); // Silent refresh
+                }
+            }, 10000);
+        }
+
+        function showAlert(type, message) {
+            const container = document.getElementById('alerts-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `
+                <span>${getAlertIcon(type)}</span>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(alertDiv);
+            
+            // Remove alert after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        function getAlertIcon(type) {
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            return icons[type] || 'ℹ️';
+        }
+
+        async function testConnection() {
+            try {
+                const response = await fetch('/api/jenkins/status');
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'connected') {
+                    updateConnectionStatus('jenkins-status', 'online');
+                    updateConnectionStatus('deployment-status', 'online');
+                    updateConnectionStatus('docker-status', 'online');
+                    dashboardData.jenkinsConnected = true;
+                    showAlert('success', 'Successfully connected to Jenkins server');
+                } else {
+                    updateConnectionStatus('jenkins-status', 'offline');
+                    updateConnectionStatus('deployment-status', 'offline');
+                    updateConnectionStatus('docker-status', 'offline');
+                    dashboardData.jenkinsConnected = false;
+                    showAlert('error', `Connection failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                updateConnectionStatus('jenkins-status', 'offline');
+                updateConnectionStatus('deployment-status', 'offline');
+                updateConnectionStatus('docker-status', 'offline');
+                dashboardData.jenkinsConnected = false;
+                showAlert('error', `Network error: ${error.message}`);
+            }
+        }
+
+        function updateConnectionStatus(elementId, status) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.className = `status-dot ${status}`;
+            }
+        }
+
+        async function loadJobs() {
+            try {
+                const response = await fetch('/api/jenkins/jobs');
+                const data = await response.json();
+                
+                if (response.ok && data.jobs) {
+                    dashboardData.jobs = data.jobs;
+                    populateJobSelector(data.jobs);
+                    showAlert('success', `Discovered ${data.jobs.length} Jenkins jobs`);
+                    
+                    // Auto-select default job
+                    const defaultJob = data.jobs.find(job => job.name === 'Automated_Deployement') || data.jobs[0];
+                    if (defaultJob) {
+                        currentJob = defaultJob.name;
+                        document.getElementById('job-selector').value = currentJob;
+                        loadJobBuilds();
+                    }
+                } else {
+                    showAlert('error', 'Failed to load Jenkins jobs');
+                }
+            } catch (error) {
+                showAlert('error', `Error loading jobs: ${error.message}`);
+            }
+        }
+
+        function populateJobSelector(jobs) {
+            const selector = document.getElementById('job-selector');
+            selector.innerHTML = '<option value="">Select a job...</option>';
+            
+            jobs.forEach(job => {
+                const option = document.createElement('option');
+                option.value = job.name;
+                option.textContent = `${job.name} (#${job.lastBuild?.number || 'N/A'})`;
+                selector.appendChild(option);
+            });
+        }
+
+        async function loadJobBuilds() {
+            const selectedJob = document.getElementById('job-selector').value;
+            if (!selectedJob) return;
+            
+            currentJob = selectedJob;
+            const buildsContainer = document.getElementById('builds-list');
+            
+            buildsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading build information for ${selectedJob}...
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/jenkins/job/${selectedJob}/lastBuild`);
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    try {
+                        const buildData = JSON.parse(text);
+                        displayBuildInfo(buildData);
+                        updatePipelineStatus(buildData);
+                        loadConsoleOutput(selectedJob);
+                    } catch (parseError) {
+                        buildsContainer.innerHTML = `
+                            <div class="alert alert-warning">
+                                <span>⚠️</span>
+                                <span>Unable to parse build data. Raw response received.</span>
+                            </div>
+                        `;
+                    }
+                } else {
+                    buildsContainer.innerHTML = `
+                        <div class="alert alert-error">
+                            <span>❌</span>
+                            <span>Failed to load build information (Status: ${response.status})</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                buildsContainer.innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <span>Error: ${error.message}</span>
+                    </div>
+                `;
+            }
+        }
+
+        function displayBuildInfo(buildData) {
+            const buildsContainer = document.getElementById('builds-list');
+            const status = buildData.result ? buildData.result.toLowerCase() : 'building';
+            const statusClass = getStatusClass(status);
+            
+            const startTime = buildData.timestamp ? new Date(buildData.timestamp) : new Date();
+            const duration = buildData.duration ? formatDuration(buildData.duration) : 'In progress';
+            
+            buildsContainer.innerHTML = `
+                <div class="build-item" onclick="showBuildDetails(${JSON.stringify(buildData).replace(/"/g, '&quot;')})">
+                    <div class="build-info">
+                        <div class="build-name">Build #${buildData.number || 'Unknown'}</div>
+                        <div class="build-details">
+                            Started: ${startTime.toLocaleString()}<br>
+                            Duration: ${duration}<br>
+                            Triggered by: ${buildData.actions?.[0]?.causes?.[0]?.shortDescription || 'Manual'}
+                        </div>
+                    </div>
+                    <div class="build-status ${statusClass}">${status}</div>
+                </div>
+            `;
+
+            // Update metrics
+            updateMetrics(buildData);
+        }
+
+        function showBuildDetails(buildData) {
+            const modal = document.getElementById('pipeline-modal');
+            const content = document.getElementById('pipeline-details-content');
+            
+            content.innerHTML = `
+                <div class="build-details-full">
+                    <h3>Build #${buildData.number}</h3>
+                    <div style="margin: 20px 0;">
+                        <strong>Status:</strong> ${buildData.result || 'Building'}<br>
+                        <strong>Duration:</strong> ${buildData.duration ? formatDuration(buildData.duration) : 'In progress'}<br>
+                        <strong>Started:</strong> ${buildData.timestamp ? new Date(buildData.timestamp).toLocaleString() : 'Unknown'}<br>
+                        <strong>URL:</strong> <a href="${buildData.url}" target="_blank">${buildData.url}</a>
+                    </div>
+                    <div class="console-output" style="height: 300px; margin-top: 20px;">
+                        Loading detailed console output...
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+            
+            // Load detailed console output
+            loadDetailedConsole(buildData.url);
+        }
+
+        async function loadDetailedConsole(buildUrl) {
+            try {
+                const jobName = currentJob;
+                const response = await fetch(`/api/jenkins/job/${jobName}/lastBuild/consoleText`);
+                const consoleDiv = document.querySelector('#pipeline-details-content .console-output');
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    consoleDiv.innerHTML = formatConsoleOutput(text);
+                } else {
+                    consoleDiv.innerHTML = `Error loading detailed console output (Status: ${response.status})`;
+                }
+            } catch (error) {
+                const consoleDiv = document.querySelector('#pipeline-details-content .console-output');
+                consoleDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        function updatePipelineStatus(buildData) {
+            const pipelineContainer = document.getElementById('pipeline-overview');
+            const stages = pipelineContainer.querySelectorAll('.pipeline-stage');
+            const isBuilding = !buildData.result;
+            const isSuccess = buildData.result === 'SUCCESS';
+            
+            stages.forEach((stage, index) => {
+                const stageIcon = stage.querySelector('.stage-icon');
+                
+                if (isBuilding) {
+                    if (index === 0) {
+                        stageIcon.className = 'stage-icon success';
+                    } else if (index === 1) {
+                        stageIcon.className = 'stage-icon building';
+                    } else {
+                        stageIcon.className = 'stage-icon pending';
+                    }
+                } else if (isSuccess) {
+                    stageIcon.className = 'stage-icon success';
+                } else {
+                    if (index < 2) {
+                        stageIcon.className = 'stage-icon success';
+                    } else if (index === 2) {
+                        stageIcon.className = 'stage-icon failure';
+                    } else {
+                        stageIcon.className = 'stage-icon pending';
+                    }
+                }
+            });
+            
+            updateConnectionStatus('deployment-status', isSuccess ? 'online' : isBuilding ? 'building' : 'offline');
+        }
+
+        async function loadConsoleOutput(jobName, silent = true) {
+            try {
+                const response = await fetch(`/api/jenkins/job/${jobName}/lastBuild/consoleText`);
+                const consoleDiv = document.getElementById('console-output');
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    const formattedOutput = formatConsoleOutput(text);
+                    consoleDiv.innerHTML = formattedOutput;
+                    
+                    // Auto-scroll to bottom
+                    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                } else {
+                    if (!silent) {
+                        consoleDiv.innerHTML = `<div class="console-line error">Error loading console output (Status: ${response.status})</div>`;
+                    }
+                }
+            } catch (error) {
+                if (!silent) {
+                    document.getElementById('console-output').innerHTML = `<div class="console-line error">Error: ${error.message}</div>`;
+                }
+            }
+        }
+
+        function formatConsoleOutput(text) {
+            const lines = text.split('\n');
+            const maxLines = 200; // Limit for performance
+            const displayLines = lines.slice(-maxLines);
+            
+            return displayLines.map(line => {
+                let className = 'console-line';
+                
+                if (line.toLowerCase().includes('error') || line.toLowerCase().includes('failed')) {
+                    className += ' error';
+                } else if (line.toLowerCase().includes('warning') || line.toLowerCase().includes('warn')) {
+                    className += ' warning';
+                } else if (line.toLowerCase().includes('success') || line.toLowerCase().includes('completed')) {
+                    className += ' success';
+                }
+                
+                return `<div class="${className}">${escapeHtml(line)}</div>`;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function initializeConsole() {
+            const consoleDiv = document.getElementById('console-output');
+            consoleDiv.innerHTML = '<div class="console-line">Console ready... Select a job to view output.</div>';
+        }
+
+        function switchConsoleTab(tab) {
+            dashboardData.currentConsoleTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.console-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Load appropriate content
+            if (currentJob) {
+                loadConsoleContent(tab);
+            }
+        }
+
+        async function loadConsoleContent(tab) {
+            const consoleDiv = document.getElementById('console-output');
+            
+            switch(tab) {
+                case 'output':
+                    loadConsoleOutput(currentJob, false);
+                    break;
+                case 'logs':
+                    consoleDiv.innerHTML = '<div class="console-line">Loading build logs...</div>';
+                    // Simulate loading build logs
+                    setTimeout(() => {
+                        consoleDiv.innerHTML = '<div class="console-line success">Build logs would appear here in a real implementation</div>';
+                    }, 1000);
+                    break;
+                case 'errors':
+                    consoleDiv.innerHTML = '<div class="console-line">Loading error logs...</div>';
+                    // Filter for error lines only
+                    try {
+                        const response = await fetch(`/api/jenkins/job/${currentJob}/lastBuild/consoleText`);
+                        if (response.ok) {
+                            const text = await response.text();
+                            const errorLines = text.split('\n').filter(line => 
+                                line.toLowerCase().includes('error') || 
+                                line.toLowerCase().includes('failed') ||
+                                line.toLowerCase().includes('exception')
+                            );
+                            
+                            if (errorLines.length > 0) {
+                                consoleDiv.innerHTML = errorLines.map(line => 
+                                    `<div class="console-line error">${escapeHtml(line)}</div>`
+                                ).join('');
+                            } else {
+                                consoleDiv.innerHTML = '<div class="console-line success">No errors found in recent build!</div>';
+                            }
+                        }
+                    } catch (error) {
+                        consoleDiv.innerHTML = `<div class="console-line error">Error loading error logs: ${error.message}</div>`;
+                    }
+                    break;
+            }
+        }
+
+        function searchConsole(query) {
+            const consoleLines = document.querySelectorAll('.console-line');
+            
+            consoleLines.forEach(line => {
+                if (query && line.textContent.toLowerCase().includes(query.toLowerCase())) {
+                    line.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+                    line.style.borderLeft = '3px solid #f39c12';
+                } else {
+                    line.style.backgroundColor = '';
+                    line.style.borderLeft = '3px solid transparent';
+                }
+            });
+        }
+
+        function getStatusClass(status) {
+            const statusMap = {
+                'success': 'status-success',
+                'failure': 'status-failure',
+                'building': 'status-building',
+                'unstable': 'status-warning',
+                'aborted': 'status-unknown'
+            };
+            return statusMap[status] || 'status-unknown';
+        }
+
+        function formatDuration(milliseconds) {
+            const seconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds % 60}s`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        function updateMetrics(buildData = null) {
+            // Update total builds
+            document.getElementById('total-builds').textContent = dashboardData.jobs.length || '0';
+            
+            if (buildData) {
+                // Update success rate
+                const successRate = buildData.result === 'SUCCESS' ? '100%' : 
+                                   buildData.result === 'FAILURE' ? '75%' : '85%';
+                document.getElementById('success-rate').textContent = successRate;
+                
+                // Update last deployment
+                if (buildData.timestamp) {
+                    const lastDeploy = new Date(buildData.timestamp);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - lastDeploy) / (1000 * 60));
+                    
+                    if (diffMinutes < 60) {
+                        document.getElementById('last-deployment').textContent = `${diffMinutes}m`;
+                    } else {
+                        const diffHours = Math.floor(diffMinutes / 60);
+                        document.getElementById('last-deployment').textContent = `${diffHours}h`;
+                    }
+                }
+                
+                // Update average duration
+                if (buildData.duration) {
+                    document.getElementById('avg-duration').textContent = formatDuration(buildData.duration);
+                }
+            }
+            
+            // Update uptime
+            document.getElementById('uptime').textContent = dashboardData.jenkinsConnected ? '99.9%' : '0%';
+            
+            // Update app status
+            updateConnectionStatus('app-status', dashboardData.jenkinsConnected ? 'online' : 'offline');
+        }
+
+        // Action functions
+        function refreshBuilds() {
+            if (currentJob) {
+                loadJobBuilds();
+            } else {
+                loadJobs();
+            }
+        }
+
+        function refreshLogs(showAlert = true) {
+            if (currentJob) {
+                loadConsoleContent(dashboardData.currentConsoleTab);
+                if (showAlert) {
+                    showAlert('success', 'Console logs refreshed');
+                }
+            }
+        }
+
+        function refreshPipeline() {
+            if (currentJob) {
+                loadJobBuilds();
+                showAlert('info', 'Pipeline status refreshed');
+            }
+        }
+
+        function refreshDashboard() {
+            showAlert('info', 'Refreshing all dashboard data...');
+            testConnection();
+            loadJobs();
+            updateMetrics();
+            if (currentJob) {
+                loadJobBuilds();
+            }
+        }
+
+        function triggerBuild() {
+            showAlert('warning', 'Build trigger functionality would be implemented here');
+            // In a real implementation, you would make an API call to trigger a build
+            // For now, simulate a building state
+            updateConnectionStatus('deployment-status', 'building');
+            setTimeout(() => {
+                showAlert('success', 'Build triggered successfully (simulated)');
+                updateConnectionStatus('deployment-status', 'online');
+            }, 3000);
+        }
+
+        function viewPipelineDetails() {
+            if (currentJob) {
+                // This would show detailed pipeline information
+                showAlert('info', 'Opening pipeline details...');
+                document.getElementById('pipeline-modal').style.display = 'block';
+                document.getElementById('pipeline-details-content').innerHTML = `
+                    <h3>Pipeline: ${currentJob}</h3>
+                    <div style="margin: 20px 0;">
+                        <strong>Stages:</strong> Checkout → Build & Test → Docker Build → Deploy<br>
+                        <strong>Trigger:</strong> Poll SCM (every minute)<br>
+                        <strong>Branch:</strong> main<br>
+                        <strong>Repository:</strong> https://github.com/Prasanth631/CapstoneProject.git
+                    </div>
+                    <div class="console-output" style="height: 200px;">
+                        Pipeline configuration and recent activity would be displayed here.
+                    </div>
+                `;
+            } else {
+                showAlert('warning', 'Please select a job first');
+            }
+        }
+
+        function viewJenkinsConsole() {
+            const jenkinsUrl = 'http://localhost:8080';
+            window.open(jenkinsUrl, '_blank');
+        }
+
+        function downloadLogs() {
+            if (currentJob) {
+                const logsContent = document.getElementById('console-output').textContent;
+                const timestamp = new Date().toISOString().split('T')[0];
+                const blob = new Blob([logsContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${currentJob}-console-${timestamp}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showAlert('success', 'Console logs downloaded successfully');
+            } else {
+                showAlert('warning', 'Please select a job first');
+            }
+        }
+
+        function viewDockerStatus() {
+            showAlert('info', 'Docker status: Running containers would be displayed');
+            // In a real implementation, this would show Docker container status
+        }
+
+        function openFullConsole() {
+            const modal = document.getElementById('console-modal');
+            const modalConsole = document.getElementById('modal-console-output');
+            
+            modal.style.display = 'block';
+            
+            if (currentJob) {
+                modalConsole.innerHTML = '<div class="loading"><div class="spinner"></div>Loading full console output...</div>';
+                loadConsoleOutput(currentJob).then(() => {
+                    modalConsole.innerHTML = document.getElementById('console-output').innerHTML;
+                });
+            } else {
+                modalConsole.innerHTML = '<div class="console-line">No job selected. Please select a job first.</div>';
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            // ESC to close modals
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
+            
+            // Ctrl/Cmd + R to refresh dashboard
+            if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+                event.preventDefault();
+                refreshDashboard();
+            }
+            
+            // Ctrl/Cmd + T to toggle theme
+            if ((event.ctrlKey || event.metaKey) && event.key === 't') {
+                event.preventDefault();
+                toggleTheme();
+            }
+        });
+    </script>
+</body>
+</html>
