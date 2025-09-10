@@ -3,35 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Deployment Dashboard</title>
+    <title>CI/CD Deployment Dashboard</title>
     <style>
         :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
-            --secondary-color: #2ecc71;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --background-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --secondary-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --background: #f8fafc;
+            --background-secondary: #f1f5f9;
             --card-background: #ffffff;
-            --text-primary: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --border-color: #e9ecef;
-            --shadow: 0 8px 32px rgba(0,0,0,0.1);
-            --hover-shadow: 0 12px 40px rgba(0,0,0,0.15);
-            --console-bg: #f8f9fa;
-            --console-text: #495057;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --border-light: #f1f5f9;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --ring-primary: rgb(59 130 246 / 0.5);
         }
 
         [data-theme="dark"] {
-            --background-gradient: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
-            --card-background: #2d3748;
-            --text-primary: #e2e8f0;
-            --text-secondary: #a0aec0;
-            --border-color: #4a5568;
-            --shadow: 0 8px 32px rgba(0,0,0,0.3);
-            --hover-shadow: 0 12px 40px rgba(0,0,0,0.4);
-            --console-bg: #1a202c;
-            --console-text: #e2e8f0;
+            --background: #0f172a;
+            --background-secondary: #1e293b;
+            --card-background: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --border-light: #475569;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
         }
 
         * {
@@ -41,134 +49,189 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--background-gradient);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--background);
             color: var(--text-primary);
+            line-height: 1.5;
             min-height: 100vh;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .container {
-            max-width: 1600px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 24px;
         }
 
         .header {
             background: var(--card-background);
-            padding: 30px;
-            border-radius: 15px;
+            padding: 32px;
+            border-radius: 12px;
             box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            text-align: center;
-            border-left: 5px solid var(--primary-color);
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
             position: relative;
         }
 
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.025em;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
         .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: var(--primary-color);
-            border: none;
-            border-radius: 25px;
-            padding: 10px 20px;
-            color: white;
+            background: var(--background-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: var(--text-secondary);
             cursor: pointer;
+            font-size: 14px;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
         .theme-toggle:hover {
-            background: var(--primary-dark);
-            transform: scale(1.05);
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
         }
 
-        .header h1 {
-            color: var(--text-primary);
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 600;
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
         }
 
-        .header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .status-item {
+        .status-card {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 18px;
-            background: var(--border-color);
-            border-radius: 25px;
-            font-weight: 500;
-            transition: all 0.3s ease;
+            gap: 12px;
+            padding: 16px;
+            background: var(--background-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
         }
 
-        .status-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
+        .status-indicator {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: #95a5a6;
+            background: var(--text-muted);
+            position: relative;
         }
 
-        .status-dot.online { 
+        .status-indicator.online { 
             background: var(--secondary-color);
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
         }
-        .status-dot.offline { 
-            background: var(--danger-color);
-            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
-        }
-        .status-dot.building { 
-            background: var(--warning-color);
+        
+        .status-indicator.online::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            opacity: 0.2;
             animation: pulse 2s infinite;
-            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+        }
+
+        .status-indicator.offline { 
+            background: var(--danger-color);
+        }
+        
+        .status-indicator.building { 
+            background: var(--warning-color);
+            animation: pulse 1.5s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.1); }
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .status-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .metric-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .metric-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 32px;
         }
 
         .card {
             background: var(--card-background);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: var(--shadow);
-            border-left: 5px solid var(--primary-color);
-            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all 0.2s ease;
         }
 
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--hover-shadow);
+            box-shadow: var(--shadow-md);
         }
 
         .card.full-width {
@@ -176,109 +239,85 @@
         }
 
         .card-header {
+            padding: 24px 24px 0 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .card-title {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             font-weight: 600;
             color: var(--text-primary);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .card-icon {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             background: var(--primary-color);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 14px;
             color: white;
-            font-weight: bold;
-            font-size: 1.1rem;
+            font-weight: 600;
         }
 
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+        .card-content {
+            padding: 0 24px 24px 24px;
         }
 
-        .metric-card {
-            background: var(--card-background);
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: var(--shadow);
-            border-top: 4px solid var(--primary-color);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .metric-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--hover-shadow);
-        }
-
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
-            transition: all 0.6s ease;
-        }
-
-        .metric-card:hover::before {
-            left: 100%;
-        }
-
-        .metric-value {
-            font-size: 2.8rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .metric-label {
-            color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            font-size: 0.9rem;
-        }
-
-        .refresh-btn {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: flex;
+        .btn {
+            display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            border: 1px solid;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            background: transparent;
         }
 
-        .refresh-btn:hover {
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
             background: var(--primary-dark);
-            transform: translateY(-2px);
+            border-color: var(--primary-dark);
         }
 
-        .refresh-btn:active {
-            transform: translateY(0);
+        .btn-secondary {
+            background: var(--background-secondary);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-success {
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #047857;
+            border-color: #047857;
         }
 
         .job-selector {
@@ -287,108 +326,103 @@
 
         .job-selector select {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid var(--border-color);
-            border-radius: 10px;
-            font-size: 1rem;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
             background: var(--card-background);
             color: var(--text-primary);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .job-selector select:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            box-shadow: 0 0 0 3px var(--ring-primary);
         }
 
         .builds-list {
-            max-height: 350px;
+            max-height: 400px;
             overflow-y: auto;
-            border-radius: 10px;
             border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--background-secondary);
         }
 
         .build-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 18px;
+            padding: 16px;
             border-bottom: 1px solid var(--border-color);
-            transition: all 0.3s ease;
+            background: var(--card-background);
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .build-item:hover {
-            background: var(--border-color);
-            transform: translateX(5px);
+            background: var(--background-secondary);
         }
 
         .build-item:last-child {
             border-bottom: none;
         }
 
-        .build-info {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .build-name {
+        .build-info h4 {
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-primary);
-            font-size: 1.1rem;
+            margin-bottom: 4px;
         }
 
         .build-details {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
         }
 
         .build-status {
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
             text-transform: uppercase;
-            transition: all 0.3s ease;
+            letter-spacing: 0.05em;
         }
 
         .status-success { 
-            background: rgba(46, 204, 113, 0.1);
+            background: rgba(5, 150, 105, 0.1);
             color: var(--secondary-color);
-            border: 2px solid var(--secondary-color);
+            border: 1px solid rgba(5, 150, 105, 0.2);
         }
+        
         .status-failure { 
-            background: rgba(231, 76, 60, 0.1);
+            background: rgba(220, 38, 38, 0.1);
             color: var(--danger-color);
-            border: 2px solid var(--danger-color);
+            border: 1px solid rgba(220, 38, 38, 0.2);
         }
+        
         .status-building { 
-            background: rgba(243, 156, 18, 0.1);
+            background: rgba(217, 119, 6, 0.1);
             color: var(--warning-color);
-            border: 2px solid var(--warning-color);
-            animation: pulse-status 2s infinite;
+            border: 1px solid rgba(217, 119, 6, 0.2);
         }
+        
         .status-unknown { 
-            background: rgba(149, 165, 166, 0.1);
-            color: #95a5a6;
-            border: 2px solid #95a5a6;
-        }
-
-        @keyframes pulse-status {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+            background: rgba(100, 116, 139, 0.1);
+            color: var(--text-muted);
+            border: 1px solid rgba(100, 116, 139, 0.2);
         }
 
         .pipeline-overview {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin: 20px 0;
-            padding: 20px;
-            background: var(--border-color);
-            border-radius: 12px;
+            gap: 24px;
+            margin: 24px 0;
+            padding: 24px;
+            background: var(--background-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
             overflow-x: auto;
         }
 
@@ -396,88 +430,113 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 120px;
+            min-width: 100px;
             position: relative;
         }
 
         .pipeline-stage:not(:last-child)::after {
-            content: '→';
+            content: '';
             position: absolute;
-            right: -15px;
-            top: 25px;
-            font-size: 1.5rem;
-            color: var(--text-secondary);
+            right: -12px;
+            top: 20px;
+            width: 24px;
+            height: 2px;
+            background: var(--border-color);
         }
 
         .stage-icon {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 14px;
             color: white;
             margin-bottom: 8px;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            border: 3px solid;
         }
 
-        .stage-icon.success { background: var(--secondary-color); }
-        .stage-icon.failure { background: var(--danger-color); }
+        .stage-icon.success { 
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .stage-icon.failure { 
+            background: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
         .stage-icon.building { 
             background: var(--warning-color);
-            animation: spin 2s linear infinite;
+            border-color: var(--warning-color);
+            animation: pulse 2s infinite;
         }
-        .stage-icon.pending { background: #95a5a6; }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        
+        .stage-icon.pending { 
+            background: var(--background);
+            border-color: var(--border-color);
+            color: var(--text-muted);
         }
 
         .stage-name {
-            font-size: 0.9rem;
+            font-size: 12px;
             font-weight: 500;
-            color: var(--text-primary);
+            color: var(--text-secondary);
             text-align: center;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 24px;
         }
 
         .console-container {
             background: var(--card-background);
-            border-radius: 15px;
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 32px;
             overflow: hidden;
         }
 
         .console-header {
-            padding: 20px 25px;
+            padding: 16px 24px;
             border-bottom: 1px solid var(--border-color);
+            background: var(--background-secondary);
             display: flex;
             align-items: center;
-            justify-content: between;
-            gap: 15px;
+            justify-content: space-between;
         }
 
         .console-tabs {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .console-tab {
-            padding: 8px 16px;
+            padding: 6px 12px;
             border: none;
             background: transparent;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 6px;
+            font-size: 14px;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .console-tab.active {
             background: var(--primary-color);
             color: white;
+        }
+
+        .console-tab:hover:not(.active) {
+            background: var(--border-light);
+            color: var(--text-secondary);
         }
 
         .console-content {
@@ -486,157 +545,125 @@
         }
 
         .console-output {
-            background: var(--console-bg);
+            background: #1e293b;
             height: 100%;
-            padding: 20px;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            color: var(--console-text);
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #e2e8f0;
             overflow-y: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
 
         .console-line {
-            padding: 2px 0;
-            border-left: 3px solid transparent;
-            padding-left: 10px;
-            transition: all 0.2s ease;
+            padding: 1px 0;
+            border-left: 2px solid transparent;
+            padding-left: 8px;
+            margin: 1px 0;
         }
 
         .console-line:hover {
-            background: rgba(52, 152, 219, 0.1);
+            background: rgba(59, 130, 246, 0.1);
             border-left-color: var(--primary-color);
         }
 
         .console-line.error {
-            color: var(--danger-color);
-            background: rgba(231, 76, 60, 0.05);
+            color: #fca5a5;
+            background: rgba(220, 38, 38, 0.1);
         }
 
         .console-line.warning {
-            color: var(--warning-color);
-            background: rgba(243, 156, 18, 0.05);
+            color: #fed7aa;
+            background: rgba(217, 119, 6, 0.1);
         }
 
         .console-line.success {
-            color: var(--secondary-color);
-            background: rgba(46, 204, 113, 0.05);
+            color: #86efac;
+            background: rgba(5, 150, 105, 0.1);
         }
 
         .console-search {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 8px 12px;
+            top: 12px;
+            right: 12px;
+            padding: 6px 12px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             background: var(--card-background);
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 12px;
+            width: 200px;
         }
 
-        .actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .action-btn {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 15px 20px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-size: 0.95rem;
-        }
-
-        .action-btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
-        }
-
-        .action-btn.secondary {
-            background: var(--text-secondary);
-        }
-
-        .action-btn.secondary:hover {
-            background: var(--text-primary);
-        }
-
-        .action-btn.success {
-            background: var(--secondary-color);
-        }
-
-        .action-btn.success:hover {
-            background: #27ae60;
-            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.3);
+        .console-search:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--ring-primary);
         }
 
         .loading {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            color: var(--text-secondary);
+            gap: 12px;
+            color: var(--text-muted);
             padding: 40px;
+            font-size: 14px;
         }
 
         .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid var(--border-color);
-            border-top: 3px solid var(--primary-color);
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .alert {
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
             display: flex;
-            align-items: center;
-            gap: 12px;
+            align-items: flex-start;
+            gap: 8px;
             border-left: 4px solid;
+            font-size: 14px;
             animation: slideIn 0.3s ease;
         }
 
         @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
+            from { transform: translateY(-10px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
 
         .alert-success {
-            background: rgba(46, 204, 113, 0.1);
+            background: rgba(5, 150, 105, 0.05);
             color: var(--secondary-color);
             border-left-color: var(--secondary-color);
         }
 
         .alert-error {
-            background: rgba(231, 76, 60, 0.1);
+            background: rgba(220, 38, 38, 0.05);
             color: var(--danger-color);
             border-left-color: var(--danger-color);
         }
 
         .alert-warning {
-            background: rgba(243, 156, 18, 0.1);
+            background: rgba(217, 119, 6, 0.05);
             color: var(--warning-color);
             border-left-color: var(--warning-color);
         }
 
         .alert-info {
-            background: rgba(52, 152, 219, 0.1);
+            background: rgba(37, 99, 235, 0.05);
             color: var(--primary-color);
             border-left-color: var(--primary-color);
         }
@@ -648,9 +675,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.6);
             z-index: 1000;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(4px);
         }
 
         .modal-content {
@@ -659,32 +686,44 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: var(--card-background);
-            border-radius: 15px;
-            padding: 30px;
-            max-width: 80%;
-            max-height: 80%;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 0;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            padding: 20px 24px;
             border-bottom: 1px solid var(--border-color);
+            background: var(--background-secondary);
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
         }
 
         .modal-close {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 20px;
             cursor: pointer;
-            color: var(--text-secondary);
-            padding: 5px;
-            border-radius: 5px;
-            transition: all 0.3s ease;
+            color: var(--text-muted);
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .modal-close:hover {
@@ -692,37 +731,61 @@
             color: white;
         }
 
-        @media (max-width: 1200px) {
+        .modal-body {
+            padding: 24px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 1024px) {
             .dashboard-grid {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr;
             }
         }
 
         @media (max-width: 768px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
+            .container {
+                padding: 16px;
             }
             
-            .status-bar {
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
+            .header {
+                padding: 24px;
             }
             
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.5rem;
             }
-
+            
+            .header-top {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+            
             .pipeline-overview {
                 flex-direction: column;
-                gap: 20px;
+                gap: 16px;
+            }
+            
+            .pipeline-stage:not(:last-child)::after {
+                content: '';
+                right: auto;
+                bottom: -8px;
+                top: auto;
+                left: 20px;
+                width: 2px;
+                height: 16px;
             }
 
-            .pipeline-stage:not(:last-child)::after {
-                content: '↓';
-                right: auto;
-                bottom: -15px;
-                top: auto;
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .console-search {
+                width: 150px;
             }
         }
 
@@ -735,28 +798,33 @@
     <div class="container">
         <!-- Header Section -->
         <div class="header">
-            <button class="theme-toggle" onclick="toggleTheme()">
-                <span id="theme-icon">🌙</span>
-                <span id="theme-text">Dark Mode</span>
-            </button>
-            <h1>🚀 Advanced Deployment Dashboard</h1>
-            <p>Comprehensive CI/CD Pipeline Monitoring & Management System</p>
-            <div class="status-bar">
-                <div class="status-item">
-                    <div class="status-dot" id="jenkins-status"></div>
-                    <span>Jenkins Server</span>
+            <div class="header-top">
+                <div class="header-content">
+                    <h1>CI/CD Deployment Dashboard</h1>
+                    <p>Monitor and manage your continuous integration and deployment pipelines</p>
                 </div>
-                <div class="status-item">
-                    <div class="status-dot" id="deployment-status"></div>
-                    <span>Pipeline Status</span>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span id="theme-icon">○</span>
+                    <span id="theme-text">Dark Mode</span>
+                </button>
+            </div>
+            
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-indicator" id="jenkins-status"></div>
+                    <span class="status-label">Jenkins Server</span>
                 </div>
-                <div class="status-item">
-                    <div class="status-dot" id="app-status"></div>
-                    <span>Application</span>
+                <div class="status-card">
+                    <div class="status-indicator" id="deployment-status"></div>
+                    <span class="status-label">Pipeline Status</span>
                 </div>
-                <div class="status-item">
-                    <div class="status-dot" id="docker-status"></div>
-                    <span>Docker Service</span>
+                <div class="status-card">
+                    <div class="status-indicator" id="app-status"></div>
+                    <span class="status-label">Application</span>
+                </div>
+                <div class="status-card">
+                    <div class="status-indicator" id="docker-status"></div>
+                    <span class="status-label">Docker Service</span>
                 </div>
             </div>
         </div>
@@ -791,38 +859,40 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">
-                        <div class="card-icon">🔄</div>
+                        <div class="card-icon">P</div>
                         Pipeline Overview
                     </div>
-                    <button class="refresh-btn" onclick="refreshPipeline()">
-                        <span>🔄</span> Refresh
+                    <button class="btn btn-secondary" onclick="refreshPipeline()">
+                        Refresh
                     </button>
                 </div>
-                <div class="pipeline-overview" id="pipeline-overview">
-                    <div class="pipeline-stage">
-                        <div class="stage-icon pending">📥</div>
-                        <div class="stage-name">Checkout</div>
+                <div class="card-content">
+                    <div class="pipeline-overview" id="pipeline-overview">
+                        <div class="pipeline-stage">
+                            <div class="stage-icon pending">1</div>
+                            <div class="stage-name">Checkout</div>
+                        </div>
+                        <div class="pipeline-stage">
+                            <div class="stage-icon pending">2</div>
+                            <div class="stage-name">Build & Test</div>
+                        </div>
+                        <div class="pipeline-stage">
+                            <div class="stage-icon pending">3</div>
+                            <div class="stage-name">Docker Build</div>
+                        </div>
+                        <div class="pipeline-stage">
+                            <div class="stage-icon pending">4</div>
+                            <div class="stage-name">Deploy</div>
+                        </div>
                     </div>
-                    <div class="pipeline-stage">
-                        <div class="stage-icon pending">🔨</div>
-                        <div class="stage-name">Build & Test</div>
+                    <div class="actions-grid">
+                        <button class="btn btn-success" onclick="triggerBuild()">
+                            Trigger Build
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewPipelineDetails()">
+                            View Details
+                        </button>
                     </div>
-                    <div class="pipeline-stage">
-                        <div class="stage-icon pending">🐳</div>
-                        <div class="stage-name">Docker Build</div>
-                    </div>
-                    <div class="pipeline-stage">
-                        <div class="stage-icon pending">🚀</div>
-                        <div class="stage-name">Deploy</div>
-                    </div>
-                </div>
-                <div class="actions-grid">
-                    <button class="action-btn success" onclick="triggerBuild()">
-                        <span>▶️</span> Trigger Build
-                    </button>
-                    <button class="action-btn secondary" onclick="viewPipelineDetails()">
-                        <span>📊</span> Details
-                    </button>
                 </div>
             </div>
 
@@ -830,62 +900,66 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">
-                        <div class="card-icon">📋</div>
+                        <div class="card-icon">B</div>
                         Build History
                     </div>
-                    <button class="refresh-btn" onclick="refreshBuilds()">
-                        <span>🔄</span> Refresh
+                    <button class="btn btn-secondary" onclick="refreshBuilds()">
+                        Refresh
                     </button>
                 </div>
-                <div class="job-selector">
-                    <select id="job-selector" onchange="loadJobBuilds()">
-                        <option value="">Select a job...</option>
-                    </select>
-                </div>
-                <div class="builds-list" id="builds-list">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Loading build information...
+                <div class="card-content">
+                    <div class="job-selector">
+                        <select id="job-selector" onchange="loadJobBuilds()">
+                            <option value="">Select a job...</option>
+                        </select>
+                    </div>
+                    <div class="builds-list" id="builds-list">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading build information...
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Quick Actions -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <div class="card-icon">⚡</div>
-                        Quick Actions
-                    </div>
+        <!-- Quick Actions Panel -->
+        <div class="card full-width">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-icon">A</div>
+                    Quick Actions
                 </div>
+            </div>
+            <div class="card-content">
                 <div class="actions-grid">
-                    <button class="action-btn" onclick="testConnection()">
-                        <span>🔗</span> Test Connection
+                    <button class="btn btn-primary" onclick="testConnection()">
+                        Test Connection
                     </button>
-                    <button class="action-btn" onclick="viewJenkinsConsole()">
-                        <span>🖥️</span> Jenkins Console
+                    <button class="btn btn-secondary" onclick="viewJenkinsConsole()">
+                        Jenkins Console
                     </button>
-                    <button class="action-btn secondary" onclick="downloadLogs()">
-                        <span>📥</span> Download Logs
+                    <button class="btn btn-secondary" onclick="downloadLogs()">
+                        Download Logs
                     </button>
-                    <button class="action-btn secondary" onclick="refreshDashboard()">
-                        <span>🔄</span> Refresh All
+                    <button class="btn btn-secondary" onclick="refreshDashboard()">
+                        Refresh All
                     </button>
-                    <button class="action-btn success" onclick="viewDockerStatus()">
-                        <span>🐳</span> Docker Status
+                    <button class="btn btn-success" onclick="viewDockerStatus()">
+                        Docker Status
                     </button>
-                    <button class="action-btn" onclick="openFullConsole()">
-                        <span>📺</span> Full Console
+                    <button class="btn btn-primary" onclick="openFullConsole()">
+                        Full Console
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Enhanced Console Section -->
+        <!-- Console Section -->
         <div class="console-container">
             <div class="console-header">
                 <div class="card-title">
-                    <div class="card-icon">📝</div>
+                    <div class="card-icon">C</div>
                     Console Output
                 </div>
                 <div class="console-tabs">
@@ -893,8 +967,8 @@
                     <button class="console-tab" onclick="switchConsoleTab('logs')">Build Logs</button>
                     <button class="console-tab" onclick="switchConsoleTab('errors')">Error Logs</button>
                 </div>
-                <button class="refresh-btn" onclick="refreshLogs()">
-                    <span>🔄</span> Refresh
+                <button class="btn btn-secondary" onclick="refreshLogs()">
+                    Refresh
                 </button>
             </div>
             <div class="console-content">
@@ -919,8 +993,10 @@
                 <h2>Full Console Output</h2>
                 <button class="modal-close" onclick="closeModal('console-modal')">×</button>
             </div>
-            <div class="console-output" id="modal-console-output" style="height: 60vh;">
-                Loading full console output...
+            <div class="modal-body">
+                <div class="console-output" id="modal-console-output" style="height: 60vh;">
+                    Loading full console output...
+                </div>
             </div>
         </div>
     </div>
@@ -932,8 +1008,10 @@
                 <h2>Pipeline Details</h2>
                 <button class="modal-close" onclick="closeModal('pipeline-modal')">×</button>
             </div>
-            <div id="pipeline-details-content">
-                Loading pipeline details...
+            <div class="modal-body">
+                <div id="pipeline-details-content">
+                    Loading pipeline details...
+                </div>
             </div>
         </div>
     </div>
@@ -977,16 +1055,16 @@
             const themeText = document.getElementById('theme-text');
             
             if (theme === 'dark') {
-                themeIcon.textContent = '☀️';
+                themeIcon.textContent = '☀';
                 themeText.textContent = 'Light Mode';
             } else {
-                themeIcon.textContent = '🌙';
+                themeIcon.textContent = '○';
                 themeText.textContent = 'Dark Mode';
             }
         }
 
         function initializeDashboard() {
-            showAlert('info', 'Initializing advanced dashboard...');
+            showAlert('info', 'Initializing dashboard...');
             testConnection();
             loadJobs();
             updateMetrics();
@@ -1026,12 +1104,12 @@
 
         function getAlertIcon(type) {
             const icons = {
-                success: '✅',
-                error: '❌',
-                warning: '⚠️',
-                info: 'ℹ️'
+                success: '✓',
+                error: '✗',
+                warning: '!',
+                info: 'i'
             };
-            return icons[type] || 'ℹ️';
+            return icons[type] || 'i';
         }
 
         async function testConnection() {
@@ -1064,7 +1142,7 @@
         function updateConnectionStatus(elementId, status) {
             const element = document.getElementById(elementId);
             if (element) {
-                element.className = `status-dot ${status}`;
+                element.className = `status-indicator ${status}`;
             }
         }
 
@@ -1132,7 +1210,7 @@
                     } catch (parseError) {
                         buildsContainer.innerHTML = `
                             <div class="alert alert-warning">
-                                <span>⚠️</span>
+                                <span>!</span>
                                 <span>Unable to parse build data. Raw response received.</span>
                             </div>
                         `;
@@ -1140,7 +1218,7 @@
                 } else {
                     buildsContainer.innerHTML = `
                         <div class="alert alert-error">
-                            <span>❌</span>
+                            <span>✗</span>
                             <span>Failed to load build information (Status: ${response.status})</span>
                         </div>
                     `;
@@ -1148,7 +1226,7 @@
             } catch (error) {
                 buildsContainer.innerHTML = `
                     <div class="alert alert-error">
-                        <span>❌</span>
+                        <span>✗</span>
                         <span>Error: ${error.message}</span>
                     </div>
                 `;
@@ -1166,7 +1244,7 @@
             buildsContainer.innerHTML = `
                 <div class="build-item" onclick="showBuildDetails(${JSON.stringify(buildData).replace(/"/g, '&quot;')})">
                     <div class="build-info">
-                        <div class="build-name">Build #${buildData.number || 'Unknown'}</div>
+                        <h4>Build #${buildData.number || 'Unknown'}</h4>
                         <div class="build-details">
                             Started: ${startTime.toLocaleString()}<br>
                             Duration: ${duration}<br>
