@@ -73,7 +73,7 @@ pipeline {
                     bat """
                         @echo off
                         echo Running new container on port 9090...
-                        docker run -d --name %CONTAINER_NAME% -p 9090:8081 %DOCKER_IMAGE%:latest
+                        docker run -d --name %CONTAINER_NAME% -p 9090:8082 %DOCKER_IMAGE%:latest
                     """
                 }
             }
