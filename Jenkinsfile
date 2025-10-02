@@ -13,7 +13,7 @@ pipeline {
         K8S_DEPLOYMENT = 'capstone-deployment'
         K8S_CONTAINER = 'capstone-container'
         K8S_NAMESPACE = 'default'
-        KUBECONFIG = 'C:\\ProgramData\\Jenkins\\.kube\\config'
+        KUBECONFIG = 'C:\\Jenkins\\.kube\\config'
     }
 
     triggers {
