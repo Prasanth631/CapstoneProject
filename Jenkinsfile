@@ -10,7 +10,9 @@ pipeline {
         EMAIL_RECIPIENTS = '2200030631cseh@gmail.com'
         DOCKERHUB_CREDENTIALS = 'docker-hub-creds'
         DOCKER_IMAGE = 'prasanth631/capstone_pro'
-        CONTAINER_NAME = 'capstone_app'
+        K8S_DEPLOYMENT = 'capstone-deployment'
+        K8S_CONTAINER = 'capstone-container'
+        K8S_NAMESPACE = 'default'
     }
 
     triggers {
@@ -36,30 +38,16 @@ pipeline {
             }
         }
 
-        stage('Docker Cleanup & Build') {
+        stage('Docker Build & Push') {
             steps {
                 script {
                     bat """
-                        @echo off
-                        echo === Cleaning old containers and images ===
-                        
-                        rem Stop and remove old container if exists
-                        docker ps -aq --filter "name=%CONTAINER_NAME%" > tmp_ids.txt
-                        for /f %%i in (tmp_ids.txt) do (
-                            echo Stopping container %%i
-                            docker stop %%i
-                            echo Removing container %%i
-                            docker rm -f %%i
-                        )
-                        del tmp_ids.txt
-
-                        rem Remove old image
-                        docker rmi -f %DOCKER_IMAGE%:latest 2>nul || echo No old image to remove
-                        echo === Cleanup completed ===
+                        docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
+                        docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest
                     """
 
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
-                        def app = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
+                        def app = docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}")
                         app.push()
                         app.push("latest")
                     }
@@ -67,14 +55,23 @@ pipeline {
             }
         }
 
-        stage('Deploy New Container') {
+        stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    bat """
-                        @echo off
-                        echo Running new container on port 9090...
-                        docker run -d --name %CONTAINER_NAME% -p 9090:8082 %DOCKER_IMAGE%:latest
-                    """
+                    try {
+                        // Apply manifests if deployment does not exist
+                        bat "kubectl apply -f k8s/"
+
+                        // Update deployment with new image
+                        bat "kubectl set image deployment/%K8S_DEPLOYMENT% %K8S_CONTAINER%=%DOCKER_IMAGE%:%BUILD_NUMBER% --record"
+
+                        // Wait for rollout status (checks if deployment successful)
+                        bat "kubectl rollout status deployment/%K8S_DEPLOYMENT% --namespace=%K8S_NAMESPACE% --timeout=60s"
+                    } catch (err) {
+                        echo "❌ Deployment failed! Rolling back..."
+                        bat "kubectl rollout undo deployment/%K8S_DEPLOYMENT% --namespace=%K8S_NAMESPACE%"
+                        error("Deployment failed and rolled back")
+                    }
                 }
             }
         }
@@ -92,7 +89,8 @@ BUILD SUMMARY
 - Jenkins URL: ${env.BUILD_URL}
 - Triggered By: ${currentBuild.getBuildCauses()[0].shortDescription}
 - Docker Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
-- Container: ${CONTAINER_NAME} (running on port 9090)
+- Kubernetes Deployment: ${K8S_DEPLOYMENT}
+- Container: ${K8S_CONTAINER}
 """
                     writeFile file: 'build-summary.txt', text: summary
                 }
@@ -117,7 +115,8 @@ The build has completed with the following status:
 - Branch: main
 - View Console Output: ${env.BUILD_URL}console
 - Docker Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
-- Running Container: ${CONTAINER_NAME} (http://localhost:9090)
+- Kubernetes Deployment: ${K8S_DEPLOYMENT}
+- Container: ${K8S_CONTAINER}
 
 The detailed summary is attached.
 
