@@ -3,10 +3,11 @@ kind: Service
 metadata:
   name: capstone-service
 spec:
-  type: LoadBalancer
+  type: NodePort  # Expose via node port
   selector:
     app: capstone
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 80
+    port: 8082         # Service port inside cluster
+    targetPort: 8082   # Container port
+    nodePort: 30080    # Port on node (localhost:30080)

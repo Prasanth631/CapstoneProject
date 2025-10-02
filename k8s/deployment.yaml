@@ -18,4 +18,4 @@ spec:
       - name: capstone-container
         image: prasanth631/capstone_pro:latest
         ports:
-        - containerPort: 80
+        - containerPort: 8082  # Must match your Spring Boot server.port
