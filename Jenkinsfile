@@ -149,18 +149,25 @@ pipeline {
                                     --requests=cpu=250m,memory=512Mi -n default
                                 
                                 echo.
-                                echo Exposing Prometheus as NodePort service...
-                                kubectl expose deployment prometheus ^
-                                    --type=NodePort ^
-                                    --port=9090 ^
-                                    --target-port=9090 ^
-                                    --name=prometheus-service -n default
+                                echo Creating Prometheus service manifest...
+                                echo apiVersion: v1 > prometheus-service.yaml
+                                echo kind: Service >> prometheus-service.yaml
+                                echo metadata: >> prometheus-service.yaml
+                                echo   name: prometheus-service >> prometheus-service.yaml
+                                echo   namespace: default >> prometheus-service.yaml
+                                echo spec: >> prometheus-service.yaml
+                                echo   type: NodePort >> prometheus-service.yaml
+                                echo   selector: >> prometheus-service.yaml
+                                echo     app: prometheus >> prometheus-service.yaml
+                                echo   ports: >> prometheus-service.yaml
+                                echo   - port: 9090 >> prometheus-service.yaml
+                                echo     targetPort: 9090 >> prometheus-service.yaml
+                                echo     nodePort: 30090 >> prometheus-service.yaml
+                                echo     protocol: TCP >> prometheus-service.yaml
                                 
                                 echo.
-                                echo Setting NodePort to 30090...
-                                kubectl patch service prometheus-service -n default ^
-                                    --type='json' ^
-                                    -p='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30090}]'
+                                echo Applying Prometheus service...
+                                kubectl apply -f prometheus-service.yaml
                             ) ELSE (
                                 echo Prometheus deployment already exists. Updating configuration...
                                 kubectl rollout restart deployment/prometheus -n default
@@ -261,21 +268,33 @@ pipeline {
                         kubectl get svc prometheus-service -n default
                         
                         echo.
+                        echo Getting Prometheus NodePort:
+                        for /f "tokens=5 delims=:/ " %%a in ('kubectl get svc prometheus-service -n default ^| findstr NodePort') do set PROM_PORT=%%a
+                        echo Prometheus is available on NodePort: %PROM_PORT%
+                        
+                        echo.
                         echo Checking if application exposes Prometheus metrics:
-                        timeout 5 curl -s http://localhost:30080/actuator/prometheus ^| findstr "jvm_memory_used_bytes" || echo Application metrics endpoint may not be ready yet
+                        curl -s http://localhost:30080/actuator/prometheus 2^>nul ^| findstr /C:"jvm_memory_used_bytes" >nul
+                        if errorlevel 1 (
+                            echo Warning: Application metrics endpoint may not be ready yet
+                        ) else (
+                            echo Success: Application is exposing Prometheus metrics
+                        )
                         
                         echo.
                         echo ========================================
                         echo Prometheus Access Information
                         echo ========================================
-                        echo Prometheus UI: http://localhost:30090
-                        echo Prometheus API: http://localhost:30090/api/v1/query
+                        echo Prometheus UI: http://localhost:%PROM_PORT%
+                        echo Prometheus API: http://localhost:%PROM_PORT%/api/v1/query
                         echo Application Metrics: http://localhost:30080/actuator/prometheus
+                        echo Application Dashboard: http://localhost:30080/index.html
                         echo.
                         echo To view metrics in Prometheus:
-                        echo 1. Open http://localhost:30090
-                        echo 2. Enter query: jvm_memory_used_bytes
-                        echo 3. Click Execute
+                        echo 1. Open http://localhost:%PROM_PORT%
+                        echo 2. Go to Status ^> Targets to verify scrape targets
+                        echo 3. Enter query: jvm_memory_used_bytes
+                        echo 4. Click Execute to view metrics
                         echo ========================================
                     """
                 }
