@@ -392,8 +392,10 @@ class Dashboard {
             if (match) {
                 const name = match[1].split('{')[0];
                 const value = parseFloat(match[2]);
-                if (!isNaN(value)) {
-                    metrics[name] = value;
+                if (!isNaN(value) && value >= 0) {
+                    if (!metrics[name] || value > metrics[name]) {
+                        metrics[name] = value;
+                    }
                 }
             }
         });
@@ -413,16 +415,17 @@ class Dashboard {
 
         let html = '';
         metricsConfig.forEach(config => {
-            if (metrics[config.key] !== undefined) {
+            if (metrics[config.key] !== undefined && metrics[config.key] >= 0) {
                 let display = this.formatMetricValue(metrics[config.key], config.format);
                 
                 if (config.format === 'percent' && config.key === 'system_cpu_usage') {
                     const cpuEl = document.getElementById('metric-cpu');
-                    cpuEl.textContent = display;
+                    const cpuValue = Math.max(0, Math.min(100, metrics[config.key] * 100));
+                    const cpuDisplay = cpuValue.toFixed(1) + '%';
+                    cpuEl.textContent = cpuDisplay;
                     
-                    const cpuValue = metrics[config.key] * 100;
                     const prevCpu = this.lastMetrics.cpu || 0;
-                    if (prevCpu > 0) {
+                    if (prevCpu > 0 && Math.abs(cpuValue - prevCpu) > 0.1) {
                         this.updateTrend('cpu', cpuValue, prevCpu);
                     }
                     this.lastMetrics.cpu = cpuValue;
@@ -445,13 +448,19 @@ class Dashboard {
         if (html) {
             document.getElementById('metrics-grid').innerHTML = html;
             
-            if (metrics['jvm_memory_used_bytes'] && metrics['jvm_memory_max_bytes']) {
-                const memPercent = (metrics['jvm_memory_used_bytes'] / metrics['jvm_memory_max_bytes'] * 100);
+            if (metrics['jvm_memory_used_bytes'] !== undefined && 
+                metrics['jvm_memory_max_bytes'] !== undefined && 
+                metrics['jvm_memory_max_bytes'] > 0) {
+                
+                const memUsed = Math.max(0, metrics['jvm_memory_used_bytes']);
+                const memMax = Math.max(1, metrics['jvm_memory_max_bytes']);
+                const memPercent = Math.max(0, Math.min(100, (memUsed / memMax) * 100));
+                
                 const memoryEl = document.getElementById('metric-memory');
                 memoryEl.textContent = memPercent.toFixed(1) + '%';
                 
                 const prevMem = this.lastMetrics.memory || 0;
-                if (prevMem > 0) {
+                if (prevMem > 0 && Math.abs(memPercent - prevMem) > 0.1) {
                     this.updateTrend('memory', memPercent, prevMem);
                 }
                 this.lastMetrics.memory = memPercent;
@@ -460,7 +469,13 @@ class Dashboard {
                 if (this.metricsHistory.memory.length > 50) {
                     this.metricsHistory.memory.shift();
                 }
+            } else {
+                const memoryEl = document.getElementById('metric-memory');
+                memoryEl.textContent = 'N/A';
             }
+        } else {
+            document.getElementById('metric-memory').textContent = 'N/A';
+            document.getElementById('metric-cpu').textContent = 'N/A';
         }
     }
 
@@ -468,19 +483,30 @@ class Dashboard {
         const trendEl = document.getElementById(`${metric}-trend`);
         if (!trendEl) return;
         
-        const diff = current - previous;
-        const percentChange = previous !== 0 ? ((diff / previous) * 100).toFixed(1) : 0;
+        if (!isFinite(current) || !isFinite(previous) || current < 0 || previous < 0) {
+            trendEl.innerHTML = '';
+            return;
+        }
         
-        if (Math.abs(diff) < 0.1) {
+        const diff = current - previous;
+        
+        if (Math.abs(diff) < 0.1 || previous === 0) {
+            trendEl.innerHTML = '';
+            return;
+        }
+        
+        const percentChange = Math.abs((diff / previous) * 100);
+        
+        if (!isFinite(percentChange) || percentChange > 1000) {
             trendEl.innerHTML = '';
             return;
         }
         
         if (diff > 0) {
-            trendEl.innerHTML = `<span class="up">↑ ${Math.abs(percentChange)}%</span>`;
+            trendEl.innerHTML = `<span class="up">↑ ${percentChange.toFixed(1)}%</span>`;
             trendEl.className = 'metric-trend up';
         } else {
-            trendEl.innerHTML = `<span class="down">↓ ${Math.abs(percentChange)}%</span>`;
+            trendEl.innerHTML = `<span class="down">↓ ${percentChange.toFixed(1)}%</span>`;
             trendEl.className = 'metric-trend down';
         }
     }
