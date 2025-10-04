@@ -4,820 +4,267 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CI/CD Dashboard - Capstone Project</title>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --success: #059669;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --bg: #f8fafc;
-            --bg-secondary: #f1f5f9;
-            --card: #ffffff;
-            --text: #0f172a;
-            --text-secondary: #475569;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-        }
-
-        [data-theme="dark"] {
-            --bg: #0f172a;
-            --bg-secondary: #1e293b;
-            --card: #1e293b;
-            --text: #f8fafc;
-            --text-secondary: #cbd5e1;
-            --text-muted: #94a3b8;
-            --border: #334155;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .header {
-            background: var(--card);
-            padding: 32px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 32px;
-            border: 1px solid var(--border);
-        }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .header p {
-            color: var(--text-secondary);
-        }
-
-        .theme-toggle {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .theme-toggle:hover {
-            background: var(--primary);
-            color: white;
-        }
-
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-top: 24px;
-        }
-
-        .status-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--text-muted);
-        }
-
-        .status-dot.online {
-            background: var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.offline {
-            background: var(--danger);
-        }
-
-        .status-dot.building {
-            background: var(--warning);
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        .metric-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .metric-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .metric-label {
-            color: var(--text-muted);
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 24px;
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .card-body {
-            padding: 24px;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            border-color: var(--border);
-            color: var(--text-secondary);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-secondary);
-        }
-
-        .build-item {
-            padding: 20px;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-
-        .build-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .build-number {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .build-status {
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .build-status.success {
-            background: rgba(5, 150, 105, 0.1);
-            color: var(--success);
-        }
-
-        .build-status.failure {
-            background: rgba(220, 38, 38, 0.1);
-            color: var(--danger);
-        }
-
-        .build-status.building {
-            background: rgba(217, 119, 6, 0.1);
-            color: var(--warning);
-        }
-
-        .build-info {
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.8;
-        }
-
-        .console {
-            background: #1e293b;
-            color: #e2e8f0;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.6;
-            max-height: 500px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-
-        .console-line {
-            padding: 2px 0;
-        }
-
-        .console-line.error {
-            color: #fca5a5;
-        }
-
-        .console-line.warning {
-            color: #fed7aa;
-        }
-
-        .console-line.success {
-            color: #86efac;
-        }
-
-        .prometheus-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
-        }
-
-        .prom-metric {
-            padding: 16px;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-        }
-
-        .prom-metric-name {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .prom-metric-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-        }
-
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 40px;
-            color: var(--text-muted);
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            border-left: 4px solid;
-            animation: slideIn 0.3s;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .alert-success {
-            background: rgba(5, 150, 105, 0.1);
-            color: var(--success);
-            border-color: var(--success);
-        }
-
-        .alert-error {
-            background: rgba(220, 38, 38, 0.1);
-            color: var(--danger);
-            border-color: var(--danger);
-        }
-
-        .alert-info {
-            background: rgba(37, 99, 235, 0.1);
-            color: var(--primary);
-            border-color: var(--primary);
-        }
-
-        select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--card);
-            color: var(--text);
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .header-top {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-            }
-            
-            .metrics-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="header-top">
-                <div>
-                    <h1>CI/CD Deployment Dashboard</h1>
-                    <p>Capstone Project - Automated Deployment with Jenkins & Kubernetes</p>
-                </div>
-                <button class="theme-toggle" onclick="toggleTheme()">
-                    <span id="theme-text">Toggle Dark Mode</span>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="nav-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <span>CI/CD Dashboard</span>
+            </div>
+            <div class="nav-actions">
+                <button class="nav-btn" id="fullscreen-btn" title="Toggle Fullscreen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    </svg>
+                </button>
+                <button class="nav-btn" id="refresh-all" title="Refresh All">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                </button>
+                <button class="nav-btn" id="theme-toggle" title="Toggle Theme">
+                    <svg class="theme-icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <svg class="theme-icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
                 </button>
             </div>
+        </div>
+    </nav>
 
-            <div class="status-grid">
-                <div class="status-card">
-                    <div class="status-dot" id="jenkins-status"></div>
-                    <span>Jenkins Server</span>
-                </div>
-                <div class="status-card">
-                    <div class="status-dot" id="app-status"></div>
-                    <span>Application</span>
-                </div>
-                <div class="status-card">
-                    <div class="status-dot" id="k8s-status"></div>
-                    <span>Kubernetes</span>
-                </div>
-                <div class="status-card">
-                    <div class="status-dot" id="prometheus-status"></div>
-                    <span>Prometheus</span>
-                </div>
+    <div class="container">
+        <div class="status-bar">
+            <div class="status-item" id="status-jenkins">
+                <div class="status-dot"></div>
+                <span class="status-label">Jenkins</span>
+                <span class="status-time" id="jenkins-time"></span>
+            </div>
+            <div class="status-item" id="status-app">
+                <div class="status-dot"></div>
+                <span class="status-label">Application</span>
+                <span class="status-time" id="app-time"></span>
+            </div>
+            <div class="status-item" id="status-k8s">
+                <div class="status-dot"></div>
+                <span class="status-label">Kubernetes</span>
+                <span class="status-time" id="k8s-time"></span>
+            </div>
+            <div class="status-item" id="status-prometheus">
+                <div class="status-dot"></div>
+                <span class="status-label">Prometheus</span>
+                <span class="status-time" id="prom-time"></span>
             </div>
         </div>
 
         <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-value" id="total-jobs">0</div>
-                <div class="metric-label">Total Jobs</div>
+            <div class="metric-card" onclick="window.app.showMetricDetails('jobs')">
+                <div class="metric-icon jobs">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                    </svg>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metric-jobs">0</div>
+                    <div class="metric-label">Total Jobs</div>
+                    <div class="metric-trend" id="jobs-trend"></div>
+                </div>
             </div>
-            <div class="metric-card">
-                <div class="metric-value" id="last-build-num">-</div>
-                <div class="metric-label">Last Build</div>
+            <div class="metric-card" onclick="window.app.showMetricDetails('build')">
+                <div class="metric-icon build">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metric-build">-</div>
+                    <div class="metric-label">Last Build</div>
+                    <div class="metric-trend" id="build-trend"></div>
+                </div>
             </div>
-            <div class="metric-card">
-                <div class="metric-value" id="build-duration">-</div>
-                <div class="metric-label">Duration</div>
+            <div class="metric-card" onclick="window.app.showMetricDetails('duration')">
+                <div class="metric-icon duration">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metric-duration">-</div>
+                    <div class="metric-label">Duration</div>
+                    <div class="metric-trend" id="duration-trend"></div>
+                </div>
             </div>
-            <div class="metric-card">
-                <div class="metric-value" id="cpu-usage">-</div>
-                <div class="metric-label">CPU Usage</div>
+            <div class="metric-card" onclick="window.app.showMetricDetails('cpu')">
+                <div class="metric-icon cpu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                        <rect x="9" y="9" width="6" height="6"></rect>
+                        <line x1="9" y1="1" x2="9" y2="4"></line>
+                        <line x1="15" y1="1" x2="15" y2="4"></line>
+                        <line x1="9" y1="20" x2="9" y2="23"></line>
+                        <line x1="15" y1="20" x2="15" y2="23"></line>
+                        <line x1="20" y1="9" x2="23" y2="9"></line>
+                        <line x1="20" y1="14" x2="23" y2="14"></line>
+                        <line x1="1" y1="9" x2="4" y2="9"></line>
+                        <line x1="1" y1="14" x2="4" y2="14"></line>
+                    </svg>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metric-cpu">-</div>
+                    <div class="metric-label">CPU Usage</div>
+                    <div class="metric-trend" id="cpu-trend"></div>
+                </div>
             </div>
-            <div class="metric-card">
-                <div class="metric-value" id="memory-usage">-</div>
-                <div class="metric-label">Memory</div>
+            <div class="metric-card" onclick="window.app.showMetricDetails('memory')">
+                <div class="metric-icon memory">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                    </svg>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metric-memory">-</div>
+                    <div class="metric-label">Memory</div>
+                    <div class="metric-trend" id="memory-trend"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-layout">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Jenkins Pipeline</h2>
+                    <button class="card-btn" onclick="window.app.refreshJobs()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <select id="job-selector" class="job-selector">
+                        <option value="">Loading jobs...</option>
+                    </select>
+                    <div id="build-info" class="build-section"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Build History</h2>
+                    <button class="card-btn" onclick="window.app.loadBuildHistory()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="build-history" class="build-history"></div>
+                </div>
             </div>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Jenkins Jobs & Builds</h2>
-                <button class="btn btn-secondary" onclick="refreshJobs()">Refresh</button>
+                <h2 class="card-title">System Metrics</h2>
+                <div class="card-actions">
+                    <button class="card-btn" onclick="window.app.exportMetrics()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                    <button class="card-btn" onclick="window.app.refreshMetrics()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
             <div class="card-body">
-                <select id="job-selector" onchange="loadBuildInfo()">
-                    <option value="">Loading jobs...</option>
-                </select>
-                <div id="build-info">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <span>Select a job to view build information</span>
-                    </div>
-                </div>
+                <div id="metrics-grid" class="system-metrics"></div>
             </div>
         </div>
 
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">Console Output</h2>
-                <button class="btn btn-secondary" onclick="refreshConsole()">Refresh</button>
-            </div>
-            <div class="card-body" style="padding: 0;">
-                <div class="console" id="console-output">
-                    <div class="console-line">Waiting for build data...</div>
+                <div class="card-actions">
+                    <button class="card-btn" onclick="window.app.clearConsole()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                    <button class="card-btn" id="auto-scroll-btn" onclick="window.app.toggleAutoScroll()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="17 13 12 18 7 13"></polyline>
+                            <polyline points="17 6 12 11 7 6"></polyline>
+                        </svg>
+                    </button>
+                    <button class="card-btn" onclick="window.app.downloadConsole()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                    <button class="card-btn" onclick="window.app.refreshConsole()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
                 </div>
+            </div>
+            <div class="card-body console-wrapper">
+                <div class="console-search">
+                    <input type="text" id="console-search" placeholder="Search console output...">
+                </div>
+                <div class="console" id="console-output"></div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Prometheus Metrics</h2>
-                <button class="btn btn-secondary" onclick="refreshPrometheus()">Refresh</button>
-            </div>
-            <div class="card-body">
-                <div class="prometheus-grid" id="prometheus-metrics">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <span>Loading metrics...</span>
-                    </div>
+        <div id="toast-container"></div>
+        <div id="modal-overlay" class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 id="modal-title"></h3>
+                    <button class="modal-close" onclick="window.app.closeModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
+                <div class="modal-body" id="modal-body"></div>
             </div>
         </div>
-
-        <div id="alerts"></div>
     </div>
 
-    <script>
-        let currentJob = '';
-        let theme = localStorage.getItem('theme') || 'light';
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            setTheme(theme);
-            checkJenkinsConnection();
-            loadJobs();
-            loadPrometheusMetrics();
-            startAutoRefresh();
-        });
-
-        function setTheme(newTheme) {
-            theme = newTheme;
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-        }
-
-        function toggleTheme() {
-            setTheme(theme === 'light' ? 'dark' : 'light');
-        }
-
-        function startAutoRefresh() {
-            setInterval(() => {
-                if (currentJob) {
-                    loadBuildInfo(true);
-                }
-                loadPrometheusMetrics(true);
-            }, 30000);
-        }
-
-        async function checkJenkinsConnection() {
-            try {
-                const response = await fetch('/api/jenkins/status');
-                const data = await response.json();
-                
-                if (response.ok && data.status === 'connected') {
-                    setStatus('jenkins-status', 'online');
-                    setStatus('app-status', 'online');
-                    setStatus('k8s-status', 'online');
-                    showAlert('success', 'Connected to Jenkins successfully');
-                } else {
-                    setStatus('jenkins-status', 'offline');
-                    showAlert('error', 'Jenkins connection failed: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                setStatus('jenkins-status', 'offline');
-                showAlert('error', 'Cannot connect to Jenkins: ' + error.message);
-            }
-        }
-
-        async function loadJobs() {
-            try {
-                const response = await fetch('/api/jenkins/jobs');
-                const data = await response.json();
-                
-                if (response.ok && data.jobs && data.jobs.length > 0) {
-                    const selector = document.getElementById('job-selector');
-                    selector.innerHTML = '<option value="">Select a job...</option>';
-                    
-                    data.jobs.forEach(job => {
-                        const option = document.createElement('option');
-                        option.value = job.name;
-                        option.textContent = job.name + (job.lastBuild ? ` (#${job.lastBuild.number})` : '');
-                        selector.appendChild(option);
-                    });
-                    
-                    document.getElementById('total-jobs').textContent = data.jobs.length;
-                    
-                    // Auto-select first job
-                    const defaultJob = data.jobs.find(j => j.name.includes('Automated')) || data.jobs[0];
-                    if (defaultJob) {
-                        currentJob = defaultJob.name;
-                        selector.value = currentJob;
-                        loadBuildInfo();
-                    }
-                } else {
-                    showAlert('error', 'No jobs found in Jenkins');
-                }
-            } catch (error) {
-                showAlert('error', 'Failed to load jobs: ' + error.message);
-            }
-        }
-
-        async function loadBuildInfo(silent = false) {
-            const job = document.getElementById('job-selector').value;
-            if (!job) return;
-            
-            currentJob = job;
-            const container = document.getElementById('build-info');
-            
-            if (!silent) {
-                container.innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading build information...</span></div>';
-            }
-
-            try {
-                const response = await fetch(`/api/jenkins/job/${encodeURIComponent(job)}/lastBuild`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const buildData = await response.json();
-                displayBuildInfo(buildData);
-                loadConsoleOutput(job);
-                
-            } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">Failed to load build: ${error.message}</div>`;
-            }
-        }
-
-        function displayBuildInfo(build) {
-            const status = (build.result || 'BUILDING').toLowerCase();
-            const statusClass = status === 'success' ? 'success' : status === 'failure' ? 'failure' : 'building';
-            
-            const duration = build.duration ? formatDuration(build.duration) : 'In progress';
-            const timestamp = build.timestamp ? new Date(build.timestamp).toLocaleString() : 'Unknown';
-            
-            document.getElementById('build-info').innerHTML = `
-                <div class="build-item">
-                    <div class="build-header">
-                        <div class="build-number">Build #${build.number || 'Unknown'}</div>
-                        <div class="build-status ${statusClass}">${status}</div>
-                    </div>
-                    <div class="build-info">
-                        <div><strong>Status:</strong> ${build.result || 'Building'}</div>
-                        <div><strong>Started:</strong> ${timestamp}</div>
-                        <div><strong>Duration:</strong> ${duration}</div>
-                        <div><strong>URL:</strong> <a href="${build.url}" target="_blank" style="color: var(--primary)">${build.url}</a></div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('last-build-num').textContent = '#' + build.number;
-            document.getElementById('build-duration').textContent = duration;
-            
-            setStatus('app-status', status === 'success' ? 'online' : status === 'failure' ? 'offline' : 'building');
-        }
-
-        async function loadConsoleOutput(job) {
-            try {
-                const response = await fetch(`/api/jenkins/job/${encodeURIComponent(job)}/lastBuild/consoleText`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const text = await response.text();
-                const lines = text.split('\n').slice(-100);
-                
-                const formatted = lines.map(line => {
-                    let className = 'console-line';
-                    const lower = line.toLowerCase();
-                    if (lower.includes('error') || lower.includes('failed')) {
-                        className += ' error';
-                    } else if (lower.includes('warning') || lower.includes('warn')) {
-                        className += ' warning';
-                    } else if (lower.includes('success') || lower.includes('complete')) {
-                        className += ' success';
-                    }
-                    return `<div class="${className}">${escapeHtml(line)}</div>`;
-                }).join('');
-                
-                document.getElementById('console-output').innerHTML = formatted;
-                
-                // Auto-scroll to bottom
-                const console = document.getElementById('console-output');
-                console.scrollTop = console.scrollHeight;
-                
-            } catch (error) {
-                document.getElementById('console-output').innerHTML = 
-                    `<div class="console-line error">Failed to load console output: ${error.message}</div>`;
-            }
-        }
-
-        async function loadPrometheusMetrics(silent = false) {
-            try {
-                const response = await fetch('/actuator/prometheus');
-                
-                if (!response.ok) {
-                    throw new Error('Metrics endpoint not available');
-                }
-                
-                const text = await response.text();
-                parseAndDisplayMetrics(text);
-                setStatus('prometheus-status', 'online');
-                
-            } catch (error) {
-                if (!silent) {
-                    document.getElementById('prometheus-metrics').innerHTML = 
-                        '<div class="alert alert-error">Prometheus metrics not available</div>';
-                }
-                setStatus('prometheus-status', 'offline');
-            }
-        }
-
-        function parseAndDisplayMetrics(metricsText) {
-            const metrics = {};
-            const lines = metricsText.split('\n');
-            
-            lines.forEach(line => {
-                if (line.startsWith('#') || !line.trim()) return;
-                const match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*(?:\{[^}]*\})?) (.+)$/);
-                if (match) {
-                    const name = match[1].split('{')[0];
-                    const value = parseFloat(match[2]);
-                    if (!isNaN(value)) {
-                        metrics[name] = value;
-                    }
-                }
-            });
-
-            const important = {
-                'jvm_memory_used_bytes': 'JVM Memory Used',
-                'jvm_memory_max_bytes': 'JVM Memory Max',
-                'jvm_threads_live': 'Active Threads',
-                'system_cpu_usage': 'System CPU',
-                'process_uptime_seconds': 'Uptime'
-            };
-
-            let html = '';
-            Object.entries(important).forEach(([key, label]) => {
-                if (metrics[key] !== undefined) {
-                    let value = metrics[key];
-                    let display = value;
-                    
-                    if (key.includes('bytes')) {
-                        display = formatBytes(value);
-                    } else if (key.includes('cpu')) {
-                        display = (value * 100).toFixed(1) + '%';
-                        document.getElementById('cpu-usage').textContent = display;
-                    } else if (key.includes('uptime')) {
-                        display = formatDuration(value * 1000);
-                    } else {
-                        display = Math.round(value);
-                    }
-                    
-                    html += `
-                        <div class="prom-metric">
-                            <div class="prom-metric-name">${label}</div>
-                            <div class="prom-metric-value">${display}</div>
-                        </div>
-                    `;
-                }
-            });
-
-            if (html) {
-                document.getElementById('prometheus-metrics').innerHTML = html;
-                
-                if (metrics['jvm_memory_used_bytes'] && metrics['jvm_memory_max_bytes']) {
-                    const memPercent = (metrics['jvm_memory_used_bytes'] / metrics['jvm_memory_max_bytes'] * 100).toFixed(1);
-                    document.getElementById('memory-usage').textContent = memPercent + '%';
-                }
-            } else {
-                document.getElementById('prometheus-metrics').innerHTML = 
-                    '<div class="alert alert-info">No metrics available</div>';
-            }
-        }
-
-        function setStatus(id, status) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.className = 'status-dot ' + status;
-            }
-        }
-
-        function showAlert(type, message) {
-            const container = document.getElementById('alerts');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            container.appendChild(alert);
-            
-            setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
-                }
-            }, 5000);
-        }
-
-        function formatDuration(ms) {
-            const seconds = Math.floor(ms / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            
-            if (hours > 0) return `${hours}h ${minutes % 60}m`;
-            if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-            return `${seconds}s`;
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function refreshJobs() {
-            loadJobs();
-            showAlert('info', 'Refreshing jobs...');
-        }
-
-        function refreshConsole() {
-            if (currentJob) {
-                loadConsoleOutput(currentJob);
-                showAlert('info', 'Refreshing console...');
-            }
-        }
-
-        function refreshPrometheus() {
-            loadPrometheusMetrics();
-            showAlert('info', 'Refreshing metrics...');
-        }
-    </script>
+    <script src="index.js"></script>
 </body>
 </html>
