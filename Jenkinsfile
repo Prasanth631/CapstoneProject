@@ -159,7 +159,7 @@ pipeline {
                                 timeout /t 2 /nobreak >nul
                                 
                                 echo Patching service to use NodePort 30090...
-                                kubectl patch service prometheus-service -n default --type=json -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":30090}]"
+                                kubectl patch service prometheus-service -n default --type=json -p="[{\\"op\\":\\"replace\\",\\"path\\":\\"/spec/ports/0/nodePort\\",\\"value\\":30090}]"
                             ) ELSE (
                                 echo Prometheus deployment already exists. Checking service...
                                 kubectl get svc prometheus-service -n default 2>nul
@@ -173,10 +173,10 @@ pipeline {
                                         --name=prometheus-service -n default
                                     
                                     timeout /t 2 /nobreak >nul
-                                    kubectl patch service prometheus-service -n default --type=json -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":30090}]"
+                                    kubectl patch service prometheus-service -n default --type=json -p="[{\\"op\\":\\"replace\\",\\"path\\":\\"/spec/ports/0/nodePort\\",\\"value\\":30090}]"
                                 ) ELSE (
                                     echo Service exists. Ensuring correct NodePort...
-                                    kubectl patch service prometheus-service -n default --type=json -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":30090}]" 2>nul || echo NodePort already set
+                                    kubectl patch service prometheus-service -n default --type=json -p="[{\\"op\\":\\"replace\\",\\"path\\":\\"/spec/ports/0/nodePort\\",\\"value\\":30090}]" 2>nul || echo NodePort already set
                                 )
                                 
                                 echo Updating configuration...
@@ -273,7 +273,6 @@ pipeline {
                 """
             }
         }
-
 
         stage('Verify Deployment') {
             steps {
@@ -388,59 +387,59 @@ pipeline {
                 echo 'Saving build summary...'
                 script {
                     def summary = """\
-╔═══════════════════════════════════════════════════════════╗
-║              BUILD & DEPLOYMENT SUMMARY                    ║
-╚═══════════════════════════════════════════════════════════╝
++-----------------------------------------------------------+
+|             BUILD & DEPLOYMENT SUMMARY                    |
++-----------------------------------------------------------+
 
-📋 Build Information:
-   • Status: ${currentBuild.currentResult}
-   • Job: ${env.JOB_NAME}
-   • Build Number: ${env.BUILD_NUMBER}
-   • Branch: main
-   • Timestamp: ${new Date()}
-   • Duration: ${currentBuild.durationString}
+Build Information:
+  - Status: ${currentBuild.currentResult}
+  - Job: ${env.JOB_NAME}
+  - Build Number: ${env.BUILD_NUMBER}
+  - Branch: main
+  - Timestamp: ${new Date()}
+  - Duration: ${currentBuild.durationString}
 
-🔧 Jenkins Details:
-   • Build URL: ${env.BUILD_URL}
-   • Console Output: ${env.BUILD_URL}console
-   • Triggered By: ${currentBuild.getBuildCauses()[0].shortDescription}
+Jenkins Details:
+  - Build URL: ${env.BUILD_URL}
+  - Console Output: ${env.BUILD_URL}console
+  - Triggered By: ${currentBuild.getBuildCauses()[0].shortDescription}
 
-🐳 Docker Information:
-   • Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
-   • Latest Tag: ${DOCKER_IMAGE}:latest
-   • Registry: Docker Hub
-   • Pull Command: docker pull ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
+Docker Information:
+  - Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
+  - Latest Tag: ${DOCKER_IMAGE}:latest
+  - Registry: Docker Hub
+  - Pull Command: docker pull ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
 
-☸️ Kubernetes Deployment:
-   • Namespace: ${K8S_NAMESPACE}
-   • Deployment: ${K8S_DEPLOYMENT}
-   • Service: ${K8S_SERVICE}
-   • Container: ${K8S_CONTAINER}
-   • Replicas: 2
-   • Strategy: RollingUpdate
+Kubernetes Deployment:
+  - Namespace: ${K8S_NAMESPACE}
+  - Deployment: ${K8S_DEPLOYMENT}
+  - Service: ${K8S_SERVICE}
+  - Container: ${K8S_CONTAINER}
+  - Replicas: 2
+  - Strategy: RollingUpdate
 
-📊 Monitoring & Metrics:
-   • Prometheus UI: http://localhost:30090
-   • Application Metrics: http://localhost:30080/actuator/prometheus
-   • Health Endpoint: http://localhost:30080/actuator/health
-   • Grafana Dashboard: Configure with Prometheus data source
+Monitoring & Metrics:
+  - Prometheus UI: http://localhost:30090
+  - Application Metrics: http://localhost:30080/actuator/prometheus
+  - Health Endpoint: http://localhost:30080/actuator/health
+  - Grafana Dashboard: Configure with Prometheus data source
 
-🌐 Application Endpoints:
-   • Main Application: http://localhost:30080
-   • Dashboard: http://localhost:30080/index.html
-   • Health Check: http://localhost:30080/actuator/health
-   • Prometheus Metrics: http://localhost:30080/actuator/prometheus
+Application Endpoints:
+  - Main Application: http://localhost:30080
+  - Dashboard: http://localhost:30080/index.html
+  - Health Check: http://localhost:30080/actuator/health
+  - Prometheus Metrics: http://localhost:30080/actuator/prometheus
 
-🔍 Verification Commands:
-   • View Pods: kubectl get pods -n ${K8S_NAMESPACE}
-   • View Service: kubectl get svc ${K8S_SERVICE} -n ${K8S_NAMESPACE}
-   • View Logs: kubectl logs -f deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
-   • Check Status: kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
-   • View Prometheus: kubectl get pods -l app=prometheus -n default
+Verification Commands:
+  - View Pods: kubectl get pods -n ${K8S_NAMESPACE}
+  - View Service: kubectl get svc ${K8S_SERVICE} -n ${K8S_NAMESPACE}
+  - View Logs: kubectl logs -f deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+  - Check Status: kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+  - View Prometheus: kubectl get pods -l app=prometheus -n default
 
-═══════════════════════════════════════════════════════════
+-------------------------------------------------------------
 Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
-═══════════════════════════════════════════════════════════
+-------------------------------------------------------------
 """
                     writeFile file: 'build-summary.txt', text: summary
                     archiveArtifacts artifacts: 'build-summary.txt', fingerprint: true
