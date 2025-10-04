@@ -12,12 +12,12 @@ pipeline {
         DOCKER_IMAGE = 'prasanth631/capstone_pro'
         K8S_DEPLOYMENT = 'capstone-deployment'
         K8S_CONTAINER = 'capstone-container'
-        K8S_NAMESPACE = 'capstone-app'  // Change to 'capstone-app' if using custom namespace
+        K8S_NAMESPACE = 'capstone-app'
         K8S_SERVICE = 'capstone-service'
-    }   
+    }
 
     triggers {
-        pollSCM('H/5 * * * *')  // Poll every 5 minutes instead of every minute
+        pollSCM('H/5 * * * *')
     }
 
     stages {
@@ -47,7 +47,6 @@ pipeline {
         stage('Code Quality Analysis') {
             steps {
                 script {
-                    // Optional: Integrate SonarQube here
                     echo "Running code quality checks..."
                 }
             }
@@ -60,7 +59,6 @@ pipeline {
                         docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
                         docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest
                     """
-
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
                         def app = docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}")
                         app.push()
@@ -83,31 +81,17 @@ pipeline {
                 script {
                     try {
                         echo "🚀 Starting Kubernetes deployment..."
-                        
-                        // Apply ConfigMap first
                         bat "kubectl apply -f k8s/configmap.yaml --namespace=${K8S_NAMESPACE}"
-                        
-                        // Apply Service (needs to exist before deployment)
                         bat "kubectl apply -f k8s/service.yaml --namespace=${K8S_NAMESPACE}"
-                        
-                        // Apply or update deployment
                         bat "kubectl apply -f k8s/deployment.yaml --namespace=${K8S_NAMESPACE}"
-                        
-                        // Update the image to new version
                         bat "kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${DOCKER_IMAGE}:${BUILD_NUMBER} --namespace=${K8S_NAMESPACE} --record"
-                        
-                        // Wait for rollout to complete
                         bat "kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=300s"
-                        
                         echo "✅ Deployment successful!"
-                        
                     } catch (err) {
                         echo "❌ Deployment failed! Error: ${err.message}"
                         echo "🔄 Attempting rollback..."
-                        
                         bat "kubectl rollout undo deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}"
                         bat "kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=120s"
-                        
                         error("Deployment failed and rolled back. Check logs for details.")
                     }
                 }
@@ -119,8 +103,6 @@ pipeline {
                 script {
                     bat "kubectl get pods --namespace=${K8S_NAMESPACE} -l app=capstone"
                     bat "kubectl get svc ${K8S_SERVICE} --namespace=${K8S_NAMESPACE}"
-                    
-                    // Get the NodePort URL
                     bat """
                         echo.
                         echo ========================================
@@ -137,13 +119,11 @@ pipeline {
             steps {
                 script {
                     sleep(time: 30, unit: 'SECONDS')
-                    
                     try {
                         def response = bat(
                             script: 'curl -s -o NUL -w "%%{http_code}" http://localhost:30080/actuator/health',
                             returnStdout: true
                         ).trim()
-                        
                         if (response == '200') {
                             echo "✅ Health check passed!"
                         } else {
@@ -208,7 +188,6 @@ pipeline {
                 def status = currentBuild.currentResult
                 def emoji = (status == 'SUCCESS') ? '✅' : '❌'
                 def subject = "${emoji} ${status}: Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}"
-                
                 def body = """\
 Hello Team,
 
@@ -258,11 +237,11 @@ Jenkins CI/CD Pipeline
                 )
             }
         }
-        
+
         success {
             echo '✅ Pipeline completed successfully!'
         }
-        
+
         failure {
             echo '❌ Pipeline failed! Check logs for details.'
         }
