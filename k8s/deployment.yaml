@@ -2,10 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: capstone-deployment
+  namespace: capstone-app
   labels:
     app: capstone
+    version: v1
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: capstone
@@ -13,9 +20,40 @@ spec:
     metadata:
       labels:
         app: capstone
+        version: v1
     spec:
       containers:
       - name: capstone-container
         image: prasanth631/capstone_pro:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 8082  # Must match your Spring Boot server.port
+        - name: http
+          containerPort: 8082
+          protocol: TCP
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        
+        # Simple TCP probes (works without Actuator)
+        readinessProbe:
+          tcpSocket:
+            port: 8082
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        livenessProbe:
+          tcpSocket:
+            port: 8082
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      
+      terminationGracePeriodSeconds: 30
