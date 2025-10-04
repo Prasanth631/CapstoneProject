@@ -20,9 +20,9 @@ pipeline {
         K8S_NAMESPACE = 'capstone-app'
         K8S_SERVICE = 'capstone-service'
         
-        // IMPORTANT: Set KUBECONFIG to your user's kubeconfig location
-        // This tells kubectl where to find Kubernetes configuration
-        KUBECONFIG = "${env.USERPROFILE}\\.kube\\config"
+        // IMPORTANT: Use your actual user path, not USERPROFILE variable
+        // Replace "Prasanth Golla" with your actual username
+        KUBECONFIG = "C:\\Users\\Prasanth Golla\\.kube\\config"
     }
 
     triggers {
@@ -93,14 +93,14 @@ pipeline {
 
         stage('Verify Kubernetes Cluster') {
             steps {
-                echo '🔍 Verifying Kubernetes cluster connectivity...'
+                echo 'Verifying Kubernetes cluster connectivity...'
                 script {
                     bat """
                         echo Current KUBECONFIG: %KUBECONFIG%
                         echo.
                         
-                        REM Set KUBECONFIG explicitly
-                        set KUBECONFIG=%USERPROFILE%\\.kube\\config
+                        REM Set KUBECONFIG explicitly to your user's config
+                        set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                         
                         echo Checking Kubernetes context...
                         kubectl config current-context
@@ -118,18 +118,18 @@ pipeline {
                         kubectl get namespace ${K8S_NAMESPACE}
                     """
                 }
-                echo '✅ Kubernetes cluster verification complete'
+                echo 'Kubernetes cluster verification complete'
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo "🚀 Starting Kubernetes deployment to namespace: ${K8S_NAMESPACE}"
+                echo "Starting Kubernetes deployment to namespace: ${K8S_NAMESPACE}"
                 script {
                     try {
                         bat """
-                            REM Set KUBECONFIG
-                            set KUBECONFIG=%USERPROFILE%\\.kube\\config
+                            REM Set KUBECONFIG to your user's config
+                            set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                             
                             echo.
                             echo [Step 1/4] Applying ConfigMap...
@@ -152,14 +152,14 @@ pipeline {
                             kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=300s
                         """
                         
-                        echo '✅ Deployment successful!'
+                        echo 'Deployment successful!'
                         
                     } catch (err) {
-                        echo "❌ Deployment failed! Error: ${err.message}"
-                        echo '🔄 Attempting automatic rollback...'
+                        echo "Deployment failed! Error: ${err.message}"
+                        echo 'Attempting automatic rollback...'
                         
                         bat """
-                            set KUBECONFIG=%USERPROFILE%\\.kube\\config
+                            set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                             kubectl rollout undo deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
                             kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=120s
                         """
@@ -172,10 +172,10 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                echo '🔍 Verifying deployment status...'
+                echo 'Verifying deployment status...'
                 script {
                     bat """
-                        set KUBECONFIG=%USERPROFILE%\\.kube\\config
+                        set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                         
                         echo.
                         echo ========================================
@@ -207,7 +207,7 @@ pipeline {
                         echo ========================================
                     """
                 }
-                echo '✅ Deployment verification complete'
+                echo 'Deployment verification complete'
             }
         }
 
@@ -268,7 +268,7 @@ pipeline {
                 script {
                     def summary = """\
 ╔════════════════════════════════════════════════════════════╗
-║              BUILD & DEPLOYMENT SUMMARY                     ║
+║              BUILD & DEPLOYMENT SUMMARY                    ║
 ╚════════════════════════════════════════════════════════════╝
 
 📋 Build Information:
