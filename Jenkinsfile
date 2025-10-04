@@ -259,59 +259,21 @@ pipeline {
 
         stage('Verify Prometheus Integration') {
             steps {
-                echo 'Verifying Prometheus metrics collection...'
-                script {
-                    bat """
-                        set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
-                        
-                        echo.
-                        echo ========================================
-                        echo Prometheus Integration Verification
-                        echo ========================================
-                        
-                        echo.
-                        echo Checking Prometheus pods:
-                        kubectl get pods -l app=prometheus -n default
-                        
-                        echo.
-                        echo Checking Prometheus service:
-                        kubectl get svc prometheus-service -n default
-                        
-                        echo.
-                        echo Getting Prometheus NodePort:
-                        for /f "tokens=5 delims=: " %%a in ('kubectl get svc prometheus-service -n default ^| findstr "9090:"') do set PROM_PORT=%%a
-                        for /f "tokens=1 delims=/" %%b in ("!PROM_PORT!") do set PROM_PORT=%%b
-                        echo Prometheus is available on NodePort: %PROM_PORT%
-                        
-                        echo.
-                        echo Checking if application exposes Prometheus metrics:
-                        curl -s http://localhost:30080/actuator/prometheus 2^>nul ^| findstr /C:"jvm_memory_used_bytes" >nul
-                        if errorlevel 1 (
-                            echo Warning: Application metrics endpoint may not be ready yet
-                        ) else (
-                            echo Success: Application is exposing Prometheus metrics
-                        )
-                        
-                        echo.
-                        echo ========================================
-                        echo Prometheus Access Information
-                        echo ========================================
-                        echo Prometheus UI: http://localhost:%PROM_PORT%
-                        echo Prometheus API: http://localhost:%PROM_PORT%/api/v1/query
-                        echo Application Metrics: http://localhost:30080/actuator/prometheus
-                        echo Application Dashboard: http://localhost:30080/index.html
-                        echo.
-                        echo To view metrics in Prometheus:
-                        echo 1. Open http://localhost:%PROM_PORT%
-                        echo 2. Go to Status ^> Targets to verify scrape targets
-                        echo 3. Enter query: jvm_memory_used_bytes
-                        echo 4. Click Execute to view metrics
-                        echo ========================================
-                    """
-                }
-                echo 'Prometheus integration verification complete'
+                bat """
+                set PROM_PORT=30090
+                echo Prometheus is available on NodePort: %PROM_PORT%
+
+                echo Checking Prometheus UI access...
+                curl http://localhost:%PROM_PORT%/graph || exit /b 1
+
+                echo Checking Spring Boot metrics endpoint...
+                curl http://localhost:30080/actuator/prometheus || exit /b 1
+
+                echo Prometheus and Spring Boot metrics integration verified successfully!
+                """
             }
         }
+
 
         stage('Verify Deployment') {
             steps {
