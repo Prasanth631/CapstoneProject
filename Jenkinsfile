@@ -7,86 +7,76 @@ pipeline {
     }
 
     environment {
-        // Email configuration
         EMAIL_RECIPIENTS = '2200030631cseh@gmail.com'
-        
-        // Docker configuration
         DOCKERHUB_CREDENTIALS = 'docker-hub-creds'
         DOCKER_IMAGE = 'prasanth631/capstone_pro'
         
-        // Kubernetes configuration
         K8S_DEPLOYMENT = 'capstone-deployment'
         K8S_CONTAINER = 'capstone-container'
         K8S_NAMESPACE = 'capstone-app'
         K8S_SERVICE = 'capstone-service'
         
-        // IMPORTANT: Use your actual user path, not USERPROFILE variable
-        // Replace "Prasanth Golla" with your actual username
         KUBECONFIG = "C:\\Users\\Prasanth Golla\\.kube\\config"
     }
 
     triggers {
-        // Poll GitHub every 5 minutes for changes
         pollSCM('H/5 * * * *')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo '📥 Checking out code from GitHub...'
+                echo 'Checking out code from GitHub...'
                 git url: 'https://github.com/Prasanth631/CapstoneProject.git', branch: 'main'
-                echo '✅ Code checkout complete'
+                echo 'Code checkout complete'
             }
         }
 
         stage('Build & Test') {
             steps {
-                echo '🔨 Building application with Maven...'
+                echo 'Building application with Maven...'
                 bat 'mvn clean install'
-                echo '✅ Build and tests complete'
+                echo 'Build and tests complete'
             }
         }
 
         stage('Publish Test Results') {
             steps {
-                echo '📊 Publishing test results...'
+                echo 'Publishing test results...'
                 junit 'target/surefire-reports/*.xml'
-                echo '✅ Test results published'
+                echo 'Test results published'
             }
         }
 
         stage('Code Quality Analysis') {
             steps {
-                echo '🔍 Running code quality checks...'
+                echo 'Running code quality checks...'
                 script {
-                    // Optional: Add SonarQube or other code quality tools here
                     echo 'Code quality analysis placeholder - configure SonarQube if needed'
                 }
-                echo '✅ Code quality check complete'
+                echo 'Code quality check complete'
             }
         }
 
         stage('Docker Build & Push') {
             steps {
-                echo '🐳 Building Docker image...'
+                echo 'Building Docker image...'
                 script {
-                    // Build Docker image with build number tag
                     bat """
                         docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
                         docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest
                     """
                     
-                    echo "✅ Docker image built: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    echo "Docker image built: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                     
-                    // Push to Docker Hub
-                    echo '📤 Pushing image to Docker Hub...'
+                    echo 'Pushing image to Docker Hub...'
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
                         def app = docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}")
                         app.push()
                         app.push("latest")
                     }
                     
-                    echo '✅ Docker image pushed to Docker Hub'
+                    echo 'Docker image pushed to Docker Hub'
                 }
             }
         }
@@ -99,7 +89,6 @@ pipeline {
                         echo Current KUBECONFIG: %KUBECONFIG%
                         echo.
                         
-                        REM Set KUBECONFIG explicitly to your user's config
                         set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                         
                         echo Checking Kubernetes context...
@@ -122,13 +111,94 @@ pipeline {
             }
         }
 
+        stage('Deploy Prometheus') {
+            steps {
+                echo '========================================='
+                echo 'Deploying Prometheus Monitoring'
+                echo '========================================='
+                script {
+                    try {
+                        bat """
+                            set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
+                            
+                            echo.
+                            echo [Step 1/3] Creating or updating Prometheus ConfigMap...
+                            kubectl apply -f k8s/prometheus-config.yaml
+                            
+                            echo.
+                            echo [Step 2/3] Checking if Prometheus deployment exists...
+                            kubectl get deployment prometheus -n default 2>nul
+                            
+                            IF ERRORLEVEL 1 (
+                                echo Prometheus deployment does not exist. Creating new deployment...
+                                
+                                echo Creating Prometheus Deployment...
+                                kubectl create deployment prometheus --image=prom/prometheus:latest -n default
+                                
+                                echo.
+                                echo Configuring Prometheus to use ConfigMap...
+                                kubectl set volume deployment/prometheus ^
+                                    --add --name=prometheus-config ^
+                                    --mount-path=/etc/prometheus ^
+                                    --configmap-name=prometheus-config -n default
+                                
+                                echo.
+                                echo Setting resource limits...
+                                kubectl set resources deployment/prometheus ^
+                                    --limits=cpu=500m,memory=1Gi ^
+                                    --requests=cpu=250m,memory=512Mi -n default
+                                
+                                echo.
+                                echo Exposing Prometheus as NodePort service...
+                                kubectl expose deployment prometheus ^
+                                    --type=NodePort ^
+                                    --port=9090 ^
+                                    --target-port=9090 ^
+                                    --name=prometheus-service -n default
+                                
+                                echo.
+                                echo Setting NodePort to 30090...
+                                kubectl patch service prometheus-service -n default ^
+                                    --type='json' ^
+                                    -p='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30090}]'
+                            ) ELSE (
+                                echo Prometheus deployment already exists. Updating configuration...
+                                kubectl rollout restart deployment/prometheus -n default
+                            )
+                            
+                            echo.
+                            echo [Step 3/3] Waiting for Prometheus to be ready...
+                            kubectl wait --for=condition=available --timeout=120s deployment/prometheus -n default
+                            
+                            echo.
+                            echo ========================================
+                            echo Prometheus Deployment Summary
+                            echo ========================================
+                            kubectl get deployment prometheus -n default
+                            kubectl get svc prometheus-service -n default
+                            kubectl get pods -l app=prometheus -n default
+                            echo.
+                            echo Prometheus UI: http://localhost:30090
+                            echo Metrics endpoint: http://localhost:30090/metrics
+                            echo ========================================
+                        """
+                        
+                        echo 'Prometheus deployment successful!'
+                        
+                    } catch (err) {
+                        echo "Prometheus deployment warning: ${err.message}"
+                        echo 'Continuing with pipeline...'
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 echo "Starting Kubernetes deployment to namespace: ${K8S_NAMESPACE}"
                 script {
                     try {
                         bat """
-                            REM Set KUBECONFIG to your user's config
                             set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                             
                             echo.
@@ -170,6 +240,49 @@ pipeline {
             }
         }
 
+        stage('Verify Prometheus Integration') {
+            steps {
+                echo 'Verifying Prometheus metrics collection...'
+                script {
+                    bat """
+                        set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
+                        
+                        echo.
+                        echo ========================================
+                        echo Prometheus Integration Verification
+                        echo ========================================
+                        
+                        echo.
+                        echo Checking Prometheus pods:
+                        kubectl get pods -l app=prometheus -n default
+                        
+                        echo.
+                        echo Checking Prometheus service:
+                        kubectl get svc prometheus-service -n default
+                        
+                        echo.
+                        echo Checking if application exposes Prometheus metrics:
+                        timeout 5 curl -s http://localhost:30080/actuator/prometheus ^| findstr "jvm_memory_used_bytes" || echo Application metrics endpoint may not be ready yet
+                        
+                        echo.
+                        echo ========================================
+                        echo Prometheus Access Information
+                        echo ========================================
+                        echo Prometheus UI: http://localhost:30090
+                        echo Prometheus API: http://localhost:30090/api/v1/query
+                        echo Application Metrics: http://localhost:30080/actuator/prometheus
+                        echo.
+                        echo To view metrics in Prometheus:
+                        echo 1. Open http://localhost:30090
+                        echo 2. Enter query: jvm_memory_used_bytes
+                        echo 3. Click Execute
+                        echo ========================================
+                    """
+                }
+                echo 'Prometheus integration verification complete'
+            }
+        }
+
         stage('Verify Deployment') {
             steps {
                 echo 'Verifying deployment status...'
@@ -203,7 +316,10 @@ pipeline {
                         echo Application Access Information
                         echo ========================================
                         echo Application URL: http://localhost:30080
+                        echo Dashboard: http://localhost:30080/index.html
                         echo Health Check: http://localhost:30080/actuator/health
+                        echo Prometheus Metrics: http://localhost:30080/actuator/prometheus
+                        echo Prometheus UI: http://localhost:30090
                         echo ========================================
                     """
                 }
@@ -213,7 +329,7 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                echo '🏥 Running application health check...'
+                echo 'Running application health check...'
                 script {
                     echo 'Waiting 30 seconds for application to stabilize...'
                     sleep(time: 30, unit: 'SECONDS')
@@ -228,27 +344,40 @@ pipeline {
                         echo "HTTP Response Code: ${response}"
                         
                         if (response == '200') {
-                            echo "✅ Health check PASSED! Application is responding correctly."
+                            echo "Health check PASSED! Application is responding correctly."
                         } else if (response == '000') {
-                            echo "⚠️ Warning: Could not connect to application. It may still be starting up."
+                            echo "Warning: Could not connect to application. It may still be starting up."
                         } else {
-                            echo "⚠️ Warning: Unexpected response code: ${response}"
+                            echo "Warning: Unexpected response code: ${response}"
                         }
+                        
+                        echo 'Testing Prometheus metrics endpoint...'
+                        def metricsResponse = bat(
+                            script: 'curl -s -o NUL -w "%%{http_code}" http://localhost:30080/actuator/prometheus',
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (metricsResponse == '200') {
+                            echo "Prometheus metrics endpoint is accessible!"
+                        } else {
+                            echo "Warning: Prometheus metrics endpoint returned: ${metricsResponse}"
+                        }
+                        
                     } catch (err) {
-                        echo "⚠️ Health check could not be completed automatically."
+                        echo "Health check could not be completed automatically."
                         echo "Please verify manually at: http://localhost:30080"
                     }
                 }
-                echo '✅ Health check stage complete'
+                echo 'Health check stage complete'
             }
         }
 
         stage('Display Logs') {
             steps {
-                echo '📋 Fetching recent application logs...'
+                echo 'Fetching recent application logs...'
                 script {
                     bat """
-                        set KUBECONFIG=%USERPROFILE%\\.kube\\config
+                        set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                         
                         echo.
                         echo ========================================
@@ -258,18 +387,18 @@ pipeline {
                         echo ========================================
                     """
                 }
-                echo '✅ Logs displayed'
+                echo 'Logs displayed'
             }
         }
 
         stage('Save Build Summary') {
             steps {
-                echo '💾 Saving build summary...'
+                echo 'Saving build summary...'
                 script {
                     def summary = """\
-╔════════════════════════════════════════════════════════════╗
+╔═══════════════════════════════════════════════════════════╗
 ║              BUILD & DEPLOYMENT SUMMARY                    ║
-╚════════════════════════════════════════════════════════════╝
+╚═══════════════════════════════════════════════════════════╝
 
 📋 Build Information:
    • Status: ${currentBuild.currentResult}
@@ -287,10 +416,10 @@ pipeline {
 🐳 Docker Information:
    • Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
    • Latest Tag: ${DOCKER_IMAGE}:latest
-   • Registry: Docker Hub (https://hub.docker.com)
+   • Registry: Docker Hub
    • Pull Command: docker pull ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
 
-☸️  Kubernetes Deployment:
+☸️ Kubernetes Deployment:
    • Namespace: ${K8S_NAMESPACE}
    • Deployment: ${K8S_DEPLOYMENT}
    • Service: ${K8S_SERVICE}
@@ -298,25 +427,33 @@ pipeline {
    • Replicas: 2
    • Strategy: RollingUpdate
 
-📊 Application Endpoints:
+📊 Monitoring & Metrics:
+   • Prometheus UI: http://localhost:30090
+   • Application Metrics: http://localhost:30080/actuator/prometheus
+   • Health Endpoint: http://localhost:30080/actuator/health
+   • Grafana Dashboard: Configure with Prometheus data source
+
+🌐 Application Endpoints:
    • Main Application: http://localhost:30080
-   • Index Page: http://localhost:30080/index.html
+   • Dashboard: http://localhost:30080/index.html
    • Health Check: http://localhost:30080/actuator/health
+   • Prometheus Metrics: http://localhost:30080/actuator/prometheus
 
 🔍 Verification Commands:
    • View Pods: kubectl get pods -n ${K8S_NAMESPACE}
    • View Service: kubectl get svc ${K8S_SERVICE} -n ${K8S_NAMESPACE}
    • View Logs: kubectl logs -f deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
    • Check Status: kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+   • View Prometheus: kubectl get pods -l app=prometheus -n default
 
-═══════════════════════════════════════════════════════════════
-Generated by Jenkins CI/CD Pipeline
-═══════════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════
+Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
+═══════════════════════════════════════════════════════════
 """
                     writeFile file: 'build-summary.txt', text: summary
                     archiveArtifacts artifacts: 'build-summary.txt', fingerprint: true
                 }
-                echo '✅ Build summary saved'
+                echo 'Build summary saved'
             }
         }
     }
@@ -357,11 +494,6 @@ Generated by Jenkins CI/CD Pipeline
             margin: 0 0 10px 0;
             font-size: 28px;
         }
-        .header p {
-            margin: 5px 0;
-            opacity: 0.9;
-            font-size: 16px;
-        }
         .content { 
             padding: 30px;
         }
@@ -379,7 +511,6 @@ Generated by Jenkins CI/CD Pipeline
         .info-table { 
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
         }
         .info-table td {
             padding: 10px;
@@ -389,30 +520,6 @@ Generated by Jenkins CI/CD Pipeline
             font-weight: 600;
             color: #555;
             width: 40%;
-        }
-        .info-table td:last-child {
-            color: #333;
-        }
-        .info-list {
-            list-style: none;
-            padding: 0;
-            margin: 10px 0;
-        }
-        .info-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .info-list li:last-child {
-            border-bottom: none;
-        }
-        .label {
-            font-weight: 600;
-            color: #555;
-            display: inline-block;
-            width: 150px;
-        }
-        .value {
-            color: #333;
         }
         .link-button {
             display: inline-block;
@@ -424,9 +531,6 @@ Generated by Jenkins CI/CD Pipeline
             border-radius: 4px;
             font-weight: 500;
         }
-        .link-button:hover {
-            background-color: #0056b3;
-        }
         .code-block {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -434,8 +538,6 @@ Generated by Jenkins CI/CD Pipeline
             padding: 15px;
             font-family: 'Courier New', monospace;
             font-size: 13px;
-            overflow-x: auto;
-            color: #212529;
         }
         .footer {
             background-color: #f8f9fa;
@@ -445,14 +547,6 @@ Generated by Jenkins CI/CD Pipeline
             font-size: 14px;
             border-top: 1px solid #dee2e6;
         }
-        .status-badge {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: 600;
-            background-color: ${color};
-            color: white;
-        }
     </style>
 </head>
 <body>
@@ -460,113 +554,47 @@ Generated by Jenkins CI/CD Pipeline
         <div class="header">
             <h1>${statusIcon} Build ${status}</h1>
             <p><strong>${env.JOB_NAME}</strong> - Build #${env.BUILD_NUMBER}</p>
-            <p>${new Date().format('MMM dd, yyyy HH:mm:ss')}</p>
         </div>
         
         <div class="content">
             <div class="section">
                 <h2>Build Information</h2>
                 <table class="info-table">
-                    <tr>
-                        <td>Status</td>
-                        <td><span class="status-badge">${status}</span></td>
-                    </tr>
-                    <tr>
-                        <td>Job Name</td>
-                        <td>${env.JOB_NAME}</td>
-                    </tr>
-                    <tr>
-                        <td>Build Number</td>
-                        <td>#${env.BUILD_NUMBER}</td>
-                    </tr>
-                    <tr>
-                        <td>Duration</td>
-                        <td>${currentBuild.durationString}</td>
-                    </tr>
-                    <tr>
-                        <td>Branch</td>
-                        <td>main</td>
-                    </tr>
-                    <tr>
-                        <td>Triggered By</td>
-                        <td>${currentBuild.getBuildCauses()[0].shortDescription}</td>
-                    </tr>
+                    <tr><td>Status</td><td>${status}</td></tr>
+                    <tr><td>Build Number</td><td>#${env.BUILD_NUMBER}</td></tr>
+                    <tr><td>Duration</td><td>${currentBuild.durationString}</td></tr>
                 </table>
             </div>
             
             <div class="section">
                 <h2>Quick Actions</h2>
-                <div style="text-align: center; margin: 20px 0;">
-                    <a href="${env.BUILD_URL}" class="link-button">View Build Details</a>
-                    <a href="${env.BUILD_URL}console" class="link-button">Console Output</a>
-                    <a href="http://localhost:30080" class="link-button">Open Application</a>
+                <div style="text-align: center;">
+                    <a href="${env.BUILD_URL}" class="link-button">View Build</a>
+                    <a href="http://localhost:30080/index.html" class="link-button">Dashboard</a>
+                    <a href="http://localhost:30090" class="link-button">Prometheus</a>
                 </div>
             </div>
             
             <div class="section">
-                <h2>Docker Image</h2>
-                <ul class="info-list">
-                    <li><span class="label">Image Tag:</span> <span class="value">${DOCKER_IMAGE}:${env.BUILD_NUMBER}</span></li>
-                    <li><span class="label">Latest Tag:</span> <span class="value">${DOCKER_IMAGE}:latest</span></li>
-                    <li><span class="label">Registry:</span> <span class="value">Docker Hub</span></li>
-                </ul>
-                <div class="code-block">docker pull ${DOCKER_IMAGE}:${env.BUILD_NUMBER}</div>
-            </div>
-            
-            <div class="section">
-                <h2>Kubernetes Deployment</h2>
+                <h2>Monitoring Endpoints</h2>
                 <table class="info-table">
-                    <tr>
-                        <td>Namespace</td>
-                        <td>${K8S_NAMESPACE}</td>
-                    </tr>
-                    <tr>
-                        <td>Deployment</td>
-                        <td>${K8S_DEPLOYMENT}</td>
-                    </tr>
-                    <tr>
-                        <td>Service</td>
-                        <td>${K8S_SERVICE}</td>
-                    </tr>
-                    <tr>
-                        <td>Container</td>
-                        <td>${K8S_CONTAINER}</td>
-                    </tr>
+                    <tr><td>Application</td><td><a href="http://localhost:30080">http://localhost:30080</a></td></tr>
+                    <tr><td>Dashboard</td><td><a href="http://localhost:30080/index.html">http://localhost:30080/index.html</a></td></tr>
+                    <tr><td>Prometheus</td><td><a href="http://localhost:30090">http://localhost:30090</a></td></tr>
+                    <tr><td>Metrics</td><td><a href="http://localhost:30080/actuator/prometheus">http://localhost:30080/actuator/prometheus</a></td></tr>
                 </table>
-            </div>
-            
-            <div class="section">
-                <h2>Application Endpoints</h2>
-                <ul class="info-list">
-                    <li><span class="label">Main App:</span> <a href="http://localhost:30080">http://localhost:30080</a></li>
-                    <li><span class="label">Health Check:</span> <a href="http://localhost:30080/actuator/health">http://localhost:30080/actuator/health</a></li>
-                    <li><span class="label">Index Page:</span> <a href="http://localhost:30080/index.html">http://localhost:30080/index.html</a></li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h2>Verification Commands</h2>
-                <div class="code-block">
-kubectl get pods -n ${K8S_NAMESPACE}<br>
-kubectl get svc ${K8S_SERVICE} -n ${K8S_NAMESPACE}<br>
-kubectl logs -f deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
-                </div>
             </div>
         </div>
         
         <div class="footer">
-            <p><strong>Jenkins CI/CD Pipeline</strong></p>
-            <p>This is an automated notification. Please do not reply to this email.</p>
-            <p style="margin-top: 10px; font-size: 12px;">
-                Build started at ${new Date().format('yyyy-MM-dd HH:mm:ss')}
-            </p>
+            <p><strong>Jenkins CI/CD Pipeline with Prometheus</strong></p>
+            <p>This is an automated notification.</p>
         </div>
     </div>
 </body>
 </html>
 """
                 
-                // Send email with HTML content
                 emailext(
                     to: "${EMAIL_RECIPIENTS}",
                     subject: subject,
@@ -575,29 +603,19 @@ kubectl logs -f deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
                     mimeType: 'text/html'
                 )
                 
-                echo '✅ Email notification sent'
+                echo 'Email notification sent'
             }
         }
         
         success {
-            echo '✅✅✅ Pipeline completed successfully! ✅✅✅'
-            echo "Application is now running at: http://localhost:30080"
+            echo 'Pipeline completed successfully!'
+            echo "Application: http://localhost:30080/index.html"
+            echo "Prometheus: http://localhost:30090"
         }
         
         failure {
-            echo '❌❌❌ Pipeline failed! ❌❌❌'
-            echo 'Please check the console output for details.'
-            echo 'The deployment has been automatically rolled back to the previous working version.'
-        }
-        
-        unstable {
-            echo '⚠️⚠️⚠️ Pipeline completed with warnings ⚠️⚠️⚠️'
-        }
-        
-        cleanup {
-            echo '🧹 Cleaning up workspace...'
-            // Optional: Clean up temporary files
-            // cleanWs()
+            echo 'Pipeline failed!'
+            echo 'Deployment has been rolled back to previous version.'
         }
     }
 }
