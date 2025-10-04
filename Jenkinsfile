@@ -149,27 +149,37 @@ pipeline {
                                     --requests=cpu=250m,memory=512Mi -n default
                                 
                                 echo.
-                                echo Creating Prometheus service manifest...
-                                echo apiVersion: v1 > prometheus-service.yaml
-                                echo kind: Service >> prometheus-service.yaml
-                                echo metadata: >> prometheus-service.yaml
-                                echo   name: prometheus-service >> prometheus-service.yaml
-                                echo   namespace: default >> prometheus-service.yaml
-                                echo spec: >> prometheus-service.yaml
-                                echo   type: NodePort >> prometheus-service.yaml
-                                echo   selector: >> prometheus-service.yaml
-                                echo     app: prometheus >> prometheus-service.yaml
-                                echo   ports: >> prometheus-service.yaml
-                                echo   - port: 9090 >> prometheus-service.yaml
-                                echo     targetPort: 9090 >> prometheus-service.yaml
-                                echo     nodePort: 30090 >> prometheus-service.yaml
-                                echo     protocol: TCP >> prometheus-service.yaml
+                                echo Creating Prometheus service with NodePort 30090...
+                                kubectl expose deployment prometheus ^
+                                    --type=NodePort ^
+                                    --port=9090 ^
+                                    --target-port=9090 ^
+                                    --name=prometheus-service -n default
                                 
-                                echo.
-                                echo Applying Prometheus service...
-                                kubectl apply -f prometheus-service.yaml
+                                timeout /t 2 /nobreak >nul
+                                
+                                echo Patching service to use NodePort 30090...
+                                kubectl patch service prometheus-service -n default --type=json -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":30090}]"
                             ) ELSE (
-                                echo Prometheus deployment already exists. Updating configuration...
+                                echo Prometheus deployment already exists. Checking service...
+                                kubectl get svc prometheus-service -n default 2>nul
+                                
+                                IF ERRORLEVEL 1 (
+                                    echo Creating Prometheus service...
+                                    kubectl expose deployment prometheus ^
+                                        --type=NodePort ^
+                                        --port=9090 ^
+                                        --target-port=9090 ^
+                                        --name=prometheus-service -n default
+                                    
+                                    timeout /t 2 /nobreak >nul
+                                    kubectl patch service prometheus-service -n default --type=json -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":30090}]"
+                                ) ELSE (
+                                    echo Service exists. Ensuring correct NodePort...
+                                    kubectl patch service prometheus-service -n default --type=json -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":30090}]" 2>nul || echo NodePort already set
+                                )
+                                
+                                echo Updating configuration...
                                 kubectl rollout restart deployment/prometheus -n default
                             )
                             
@@ -269,7 +279,8 @@ pipeline {
                         
                         echo.
                         echo Getting Prometheus NodePort:
-                        for /f "tokens=5 delims=:/ " %%a in ('kubectl get svc prometheus-service -n default ^| findstr NodePort') do set PROM_PORT=%%a
+                        for /f "tokens=5 delims=: " %%a in ('kubectl get svc prometheus-service -n default ^| findstr "9090:"') do set PROM_PORT=%%a
+                        for /f "tokens=1 delims=/" %%b in ("!PROM_PORT!") do set PROM_PORT=%%b
                         echo Prometheus is available on NodePort: %PROM_PORT%
                         
                         echo.
