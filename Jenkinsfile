@@ -7,13 +7,16 @@ pipeline {
     }
 
     environment {
-        EMAIL_RECIPIENTS = '2200030631cseh@gmail.com'
+        EMAIL_RECIPIENTS     = '2200030631cseh@gmail.com'
         DOCKERHUB_CREDENTIALS = 'docker-hub-creds'
-        DOCKER_IMAGE = 'prasanth631/capstone_pro'
-        K8S_DEPLOYMENT = 'capstone-deployment'
-        K8S_CONTAINER = 'capstone-container'
-        K8S_NAMESPACE = 'capstone-app'
-        K8S_SERVICE = 'capstone-service'
+        DOCKER_IMAGE         = 'prasanth631/capstone_pro'
+        K8S_DEPLOYMENT       = 'capstone-deployment'
+        K8S_CONTAINER        = 'capstone-container'
+        K8S_NAMESPACE        = 'capstone-app'
+        K8S_SERVICE          = 'capstone-service'
+        
+        // ✅ Ensure Jenkins knows where kubeconfig is (Windows path with double slashes)
+        KUBECONFIG = "${env.USERPROFILE}\\.kube\\config"
     }
 
     triggers {
@@ -36,19 +39,6 @@ pipeline {
         stage('Publish Test Results') {
             steps {
                 junit 'target/surefire-reports/*.xml'
-                jacoco(
-                    execPattern: 'target/jacoco.exec',
-                    classPattern: 'target/classes',
-                    sourcePattern: 'src/main/java'
-                )
-            }
-        }
-
-        stage('Code Quality Analysis') {
-            steps {
-                script {
-                    echo "Running code quality checks..."
-                }
             }
         }
 
@@ -59,6 +49,7 @@ pipeline {
                         docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
                         docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest
                     """
+
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
                         def app = docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}")
                         app.push()
@@ -70,9 +61,16 @@ pipeline {
 
         stage('Verify Kubernetes Cluster') {
             steps {
-                bat 'kubectl cluster-info'
-                bat 'kubectl get nodes'
-                bat "kubectl get namespace ${K8S_NAMESPACE}"
+                script {
+                    echo "Checking Kubernetes cluster connectivity..."
+                    
+                    bat """
+                        set KUBECONFIG=%KUBECONFIG%
+                        kubectl config current-context
+                        kubectl cluster-info
+                        kubectl get nodes -o wide
+                    """
+                }
             }
         }
 
@@ -80,19 +78,30 @@ pipeline {
             steps {
                 script {
                     try {
-                        echo "🚀 Starting Kubernetes deployment..."
-                        bat "kubectl apply -f k8s/configmap.yaml --namespace=${K8S_NAMESPACE}"
-                        bat "kubectl apply -f k8s/service.yaml --namespace=${K8S_NAMESPACE}"
-                        bat "kubectl apply -f k8s/deployment.yaml --namespace=${K8S_NAMESPACE}"
-                        bat "kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${DOCKER_IMAGE}:${BUILD_NUMBER} --namespace=${K8S_NAMESPACE} --record"
-                        bat "kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=300s"
+                        echo "🚀 Deploying to namespace: ${K8S_NAMESPACE}"
+                        
+                        bat """
+                            set KUBECONFIG=%KUBECONFIG%
+
+                            kubectl apply -f k8s/configmap.yaml --namespace=${K8S_NAMESPACE}
+                            kubectl apply -f k8s/service.yaml --namespace=${K8S_NAMESPACE}
+                            kubectl apply -f k8s/deployment.yaml --namespace=${K8S_NAMESPACE}
+
+                            kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${DOCKER_IMAGE}:${BUILD_NUMBER} --namespace=${K8S_NAMESPACE} --record
+                            kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=300s
+                        """
+
                         echo "✅ Deployment successful!"
                     } catch (err) {
-                        echo "❌ Deployment failed! Error: ${err.message}"
-                        echo "🔄 Attempting rollback..."
-                        bat "kubectl rollout undo deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}"
-                        bat "kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=120s"
-                        error("Deployment failed and rolled back. Check logs for details.")
+                        echo "❌ Deployment failed: ${err.message}"
+                        echo "🔄 Rolling back..."
+
+                        bat """
+                            set KUBECONFIG=%KUBECONFIG%
+                            kubectl rollout undo deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
+                        """
+
+                        error("Deployment failed and rolled back")
                     }
                 }
             }
@@ -100,43 +109,53 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                script {
-                    bat "kubectl get pods --namespace=${K8S_NAMESPACE} -l app=capstone"
-                    bat "kubectl get svc ${K8S_SERVICE} --namespace=${K8S_NAMESPACE}"
-                    bat """
-                        echo.
-                        echo ========================================
-                        echo Application is accessible at:
-                        echo http://localhost:30080
-                        echo ========================================
-                        echo.
-                    """
-                }
+                bat """
+                    set KUBECONFIG=%KUBECONFIG%
+
+                    echo ========================================
+                    echo Pods in namespace ${K8S_NAMESPACE}:
+                    kubectl get pods --namespace=${K8S_NAMESPACE} -l app=capstone
+
+                    echo.
+                    echo Service details:
+                    kubectl get svc ${K8S_SERVICE} --namespace=${K8S_NAMESPACE}
+
+                    echo.
+                    echo Endpoints:
+                    kubectl get endpoints ${K8S_SERVICE} --namespace=${K8S_NAMESPACE}
+
+                    echo ========================================
+                    echo Application URL: http://localhost:30080
+                    echo ========================================
+                """
             }
         }
 
         stage('Health Check') {
             steps {
                 script {
+                    echo "⏳ Waiting for application to stabilize..."
                     sleep(time: 30, unit: 'SECONDS')
+                    
                     try {
                         def response = bat(
-                            script: 'curl -s -o NUL -w "%%{http_code}" http://localhost:30080/actuator/health',
+                            script: 'curl -s -o NUL -w "%%{http_code}" http://localhost:30080',
                             returnStdout: true
                         ).trim()
+                        
                         if (response == '200') {
-                            echo "✅ Health check passed!"
+                            echo "✅ Health check passed! HTTP ${response}"
                         } else {
-                            error("❌ Health check failed with status: ${response}")
+                            echo "⚠️ Health check returned: ${response}"
                         }
                     } catch (err) {
-                        echo "⚠️ Health check endpoint not accessible yet. Manual verification required."
+                        echo "⚠️ Health check endpoint not accessible yet. Manual verification needed."
                     }
                 }
             }
         }
 
-        stage('Save Build Artifacts') {
+        stage('Save Build Summary') {
             steps {
                 script {
                     def summary = """\
@@ -158,21 +177,17 @@ pipeline {
 🐳 Docker Information:
    • Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
    • Latest Tag: ${DOCKER_IMAGE}:latest
-   • Registry: Docker Hub
 
 ☸️  Kubernetes Deployment:
    • Namespace: ${K8S_NAMESPACE}
    • Deployment: ${K8S_DEPLOYMENT}
    • Service: ${K8S_SERVICE}
    • Container: ${K8S_CONTAINER}
-   • Replicas: 2
    • Access URL: http://localhost:30080
 
 📊 Application Endpoints:
    • Main App: http://localhost:30080
-   • Health Check: http://localhost:30080/actuator/health
-   • Metrics: http://localhost:30080/actuator/metrics
-
+   • Index Page: http://localhost:30080/index.html
 ═══════════════════════════════════════════════════════════════
 """
                     writeFile file: 'build-summary.txt', text: summary
@@ -188,44 +203,25 @@ pipeline {
                 def status = currentBuild.currentResult
                 def emoji = (status == 'SUCCESS') ? '✅' : '❌'
                 def subject = "${emoji} ${status}: Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}"
+                
                 def body = """\
 Hello Team,
 
 Build Completed: ${status}
 
-═══════════════════════════════════════════════════════════════
-📋 BUILD DETAILS
-═══════════════════════════════════════════════════════════════
-• Job Name: ${env.JOB_NAME}
-• Build Number: ${env.BUILD_NUMBER}
-• Status: ${status}
-• Duration: ${currentBuild.durationString}
-• Triggered By: ${currentBuild.getBuildCauses()[0].shortDescription}
-• Branch: main
+📋 Job: ${env.JOB_NAME}
+🔢 Build: ${env.BUILD_NUMBER}
+⏱ Duration: ${currentBuild.durationString}
+👤 Triggered By: ${currentBuild.getBuildCauses()[0].shortDescription}
 
-═══════════════════════════════════════════════════════════════
-🔗 LINKS
-═══════════════════════════════════════════════════════════════
-• Console Output: ${env.BUILD_URL}console
-• Build Summary: ${env.BUILD_URL}artifact/build-summary.txt
+🔗 Console Output: ${env.BUILD_URL}console
 
-═══════════════════════════════════════════════════════════════
-🐳 DOCKER IMAGE
-═══════════════════════════════════════════════════════════════
-• Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
-• Latest: ${DOCKER_IMAGE}:latest
+🐳 Docker Image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
+☸️  Kubernetes: Namespace=${K8S_NAMESPACE}, Deployment=${K8S_DEPLOYMENT}, Service=${K8S_SERVICE}
 
-═══════════════════════════════════════════════════════════════
-☸️  KUBERNETES DEPLOYMENT
-═══════════════════════════════════════════════════════════════
-• Namespace: ${K8S_NAMESPACE}
-• Deployment: ${K8S_DEPLOYMENT}
-• Service: ${K8S_SERVICE}
-• Access URL: http://localhost:30080
+🌍 Access App: http://localhost:30080
 
-═══════════════════════════════════════════════════════════════
-
-Best regards,
+Best regards,  
 Jenkins CI/CD Pipeline
 """
                 emailext(
