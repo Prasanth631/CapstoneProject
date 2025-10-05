@@ -554,9 +554,9 @@ Status: ${actualStatus} at ${new Date()}
                 // Format duration helper
                 def formatDuration = { millis ->
                     if (millis == null) return 'N/A'
-                    def seconds = millis.toLong() / 1000
-                    def minutes = (seconds / 60).toInteger()
-                    def secs = (seconds % 60).toInteger()
+                    def totalSeconds = (millis.toLong() / 1000).toInteger()
+                    def minutes = (totalSeconds / 60).toInteger()
+                    def secs = totalSeconds - (minutes * 60)
                     return minutes > 0 ? "${minutes}m ${secs}s" : "${secs}s"
                 }
                 
