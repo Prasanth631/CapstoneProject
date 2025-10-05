@@ -26,40 +26,67 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Checking out code from GitHub...'
                 git url: 'https://github.com/Prasanth631/CapstoneProject.git', branch: 'main'
                 echo 'Code checkout complete'
+                script {
+                    env.CHECKOUT_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
+                }
             }
         }
 
         stage('Build & Test') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Building application with Maven...'
                 bat 'mvn clean install'
                 echo 'Build and tests complete'
+                script {
+                    env.BUILD_TEST_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
+                }
             }
         }
 
         stage('Publish Test Results') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Publishing test results...'
                 junit 'target/surefire-reports/*.xml'
                 echo 'Test results published'
+                script {
+                    env.TEST_PUBLISH_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
+                }
             }
         }
 
         stage('Code Quality Analysis') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Running code quality checks...'
                 script {
                     echo 'Code quality analysis placeholder - configure SonarQube if needed'
                 }
                 echo 'Code quality check complete'
+                script {
+                    env.CODE_QUALITY_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
+                }
             }
         }
 
         stage('Docker Build & Push') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Building Docker image...'
                 script {
                     bat """
@@ -77,12 +104,16 @@ pipeline {
                     }
                     
                     echo 'Docker image pushed to Docker Hub'
+                    env.DOCKER_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
                 }
             }
         }
 
         stage('Verify Kubernetes Cluster') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Verifying Kubernetes cluster connectivity...'
                 script {
                     bat """
@@ -106,6 +137,7 @@ pipeline {
                         echo Checking namespace:
                         kubectl get namespace ${K8S_NAMESPACE}
                     """
+                    env.K8S_VERIFY_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
                 }
                 echo 'Kubernetes cluster verification complete'
             }
@@ -113,6 +145,9 @@ pipeline {
 
         stage('Deploy Prometheus') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo '========================================='
                 echo 'Deploying Prometheus Monitoring'
                 echo '========================================='
@@ -206,12 +241,16 @@ pipeline {
                         echo "Prometheus deployment warning: ${err.message}"
                         echo 'Continuing with pipeline...'
                     }
+                    env.PROMETHEUS_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo "Starting Kubernetes deployment to namespace: ${K8S_NAMESPACE}"
                 script {
                     try {
@@ -253,12 +292,16 @@ pipeline {
                         
                         error("Deployment failed and has been rolled back to previous version")
                     }
+                    env.K8S_DEPLOY_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
                 }
             }
         }
 
         stage('Verify Prometheus Integration') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 bat """
                 set PROM_PORT=30090
                 echo Prometheus is available on NodePort: %PROM_PORT%
@@ -271,11 +314,17 @@ pipeline {
 
                 echo Prometheus and Spring Boot metrics integration verified successfully!
                 """
+                script {
+                    env.PROM_VERIFY_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
+                }
             }
         }
 
         stage('Verify Deployment') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Verifying deployment status...'
                 script {
                     bat """
@@ -313,6 +362,7 @@ pipeline {
                         echo Prometheus UI: http://localhost:30090
                         echo ========================================
                     """
+                    env.DEPLOY_VERIFY_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
                 }
                 echo 'Deployment verification complete'
             }
@@ -320,6 +370,9 @@ pipeline {
 
         stage('Health Check') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Running application health check...'
                 script {
                     echo 'Waiting 30 seconds for application to stabilize...'
@@ -358,6 +411,7 @@ pipeline {
                         echo "Health check could not be completed automatically."
                         echo "Please verify manually at: http://localhost:30080"
                     }
+                    env.HEALTH_CHECK_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
                 }
                 echo 'Health check stage complete'
             }
@@ -365,6 +419,9 @@ pipeline {
 
         stage('Display Logs') {
             steps {
+                script {
+                    env.STAGE_START_TIME = System.currentTimeMillis()
+                }
                 echo 'Fetching recent application logs...'
                 script {
                     bat """
@@ -377,6 +434,7 @@ pipeline {
                         kubectl logs deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --tail=30
                         echo ========================================
                     """
+                    env.LOGS_DURATION = System.currentTimeMillis() - env.STAGE_START_TIME.toLong()
                 }
                 echo 'Logs displayed'
             }
@@ -386,18 +444,31 @@ pipeline {
             steps {
                 echo 'Saving build summary...'
                 script {
+                    // Get actual build result - checking if build will fail
+                    def actualStatus = currentBuild.result ?: 'SUCCESS'
+                    def statusIcon = (actualStatus == 'SUCCESS') ? '✓' : '✗'
+                    
+                    // Format stage durations
+                    def formatDuration = { millis ->
+                        if (millis == null) return 'N/A'
+                        def seconds = millis.toLong() / 1000
+                        def minutes = (seconds / 60).toInteger()
+                        def secs = (seconds % 60).toInteger()
+                        return minutes > 0 ? "${minutes}m ${secs}s" : "${secs}s"
+                    }
+                    
                     def summary = """\
 +-----------------------------------------------------------+
 |             BUILD & DEPLOYMENT SUMMARY                    |
 +-----------------------------------------------------------+
 
 Build Information:
-  - Status: ${currentBuild.currentResult}
+  - Status: ${actualStatus} ${statusIcon}
   - Job: ${env.JOB_NAME}
   - Build Number: ${env.BUILD_NUMBER}
   - Branch: main
   - Timestamp: ${new Date()}
-  - Duration: ${currentBuild.durationString}
+  - Total Duration: ${currentBuild.durationString}
 
 Jenkins Details:
   - Build URL: ${env.BUILD_URL}
@@ -417,6 +488,25 @@ Kubernetes Deployment:
   - Container: ${K8S_CONTAINER}
   - Replicas: 2
   - Strategy: RollingUpdate
+
++-----------------------------------------------------------+
+|                  STAGE EXECUTION TIMES                    |
++-----------------------------------------------------------+
+| Stage Name                    | Duration                  |
++-----------------------------------------------------------+
+| Checkout                      | ${formatDuration(env.CHECKOUT_DURATION)}                    |
+| Build & Test                  | ${formatDuration(env.BUILD_TEST_DURATION)}                 |
+| Publish Test Results          | ${formatDuration(env.TEST_PUBLISH_DURATION)}                 |
+| Code Quality Analysis         | ${formatDuration(env.CODE_QUALITY_DURATION)}                 |
+| Docker Build & Push           | ${formatDuration(env.DOCKER_DURATION)}                 |
+| Verify Kubernetes Cluster     | ${formatDuration(env.K8S_VERIFY_DURATION)}                 |
+| Deploy Prometheus             | ${formatDuration(env.PROMETHEUS_DURATION)}                |
+| Deploy to Kubernetes          | ${formatDuration(env.K8S_DEPLOY_DURATION)}                 |
+| Verify Prometheus Integration | ${formatDuration(env.PROM_VERIFY_DURATION)}                 |
+| Verify Deployment             | ${formatDuration(env.DEPLOY_VERIFY_DURATION)}                 |
+| Health Check                  | ${formatDuration(env.HEALTH_CHECK_DURATION)}                |
+| Display Logs                  | ${formatDuration(env.LOGS_DURATION)}                 |
++-----------------------------------------------------------+
 
 Monitoring & Metrics:
   - Prometheus UI: http://localhost:30090
@@ -439,6 +529,7 @@ Verification Commands:
 
 -------------------------------------------------------------
 Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
+Status: ${actualStatus} at ${new Date()}
 -------------------------------------------------------------
 """
                     writeFile file: 'build-summary.txt', text: summary
@@ -454,10 +545,20 @@ Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
             script {
                 echo 'Sending email notification...'
                 
+                // Get correct build status
                 def status = currentBuild.currentResult
                 def statusIcon = (status == 'SUCCESS') ? '[SUCCESS]' : '[FAILED]'
                 def color = (status == 'SUCCESS') ? '#28a745' : '#dc3545'
                 def subject = "${statusIcon} Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}"
+                
+                // Format duration helper
+                def formatDuration = { millis ->
+                    if (millis == null) return 'N/A'
+                    def seconds = millis.toLong() / 1000
+                    def minutes = (seconds / 60).toInteger()
+                    def secs = (seconds % 60).toInteger()
+                    return minutes > 0 ? "${minutes}m ${secs}s" : "${secs}s"
+                }
                 
                 def body = """\
 <html>
@@ -512,6 +613,25 @@ Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
             color: #555;
             width: 40%;
         }
+        .timing-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .timing-table th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+        .timing-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .timing-table tr:hover {
+            background-color: #f8f9fa;
+        }
         .link-button {
             display: inline-block;
             padding: 10px 20px;
@@ -522,14 +642,6 @@ Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
             border-radius: 4px;
             font-weight: 500;
         }
-        .code-block {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-        }
         .footer {
             background-color: #f8f9fa;
             padding: 20px;
@@ -537,6 +649,14 @@ Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
             color: #6c757d;
             font-size: 14px;
             border-top: 1px solid #dee2e6;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            background-color: ${color};
+            color: white;
         }
     </style>
 </head>
@@ -551,9 +671,36 @@ Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
             <div class="section">
                 <h2>Build Information</h2>
                 <table class="info-table">
-                    <tr><td>Status</td><td>${status}</td></tr>
+                    <tr><td>Status</td><td><span class="status-badge">${status}</span></td></tr>
                     <tr><td>Build Number</td><td>#${env.BUILD_NUMBER}</td></tr>
-                    <tr><td>Duration</td><td>${currentBuild.durationString}</td></tr>
+                    <tr><td>Total Duration</td><td>${currentBuild.durationString}</td></tr>
+                    <tr><td>Timestamp</td><td>${new Date()}</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>Stage Execution Times</h2>
+                <table class="timing-table">
+                    <thead>
+                        <tr>
+                            <th>Stage Name</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Checkout</td><td>${formatDuration(env.CHECKOUT_DURATION)}</td></tr>
+                        <tr><td>Build & Test</td><td>${formatDuration(env.BUILD_TEST_DURATION)}</td></tr>
+                        <tr><td>Publish Test Results</td><td>${formatDuration(env.TEST_PUBLISH_DURATION)}</td></tr>
+                        <tr><td>Code Quality Analysis</td><td>${formatDuration(env.CODE_QUALITY_DURATION)}</td></tr>
+                        <tr><td>Docker Build & Push</td><td>${formatDuration(env.DOCKER_DURATION)}</td></tr>
+                        <tr><td>Verify Kubernetes Cluster</td><td>${formatDuration(env.K8S_VERIFY_DURATION)}</td></tr>
+                        <tr><td>Deploy Prometheus</td><td>${formatDuration(env.PROMETHEUS_DURATION)}</td></tr>
+                        <tr><td>Deploy to Kubernetes</td><td>${formatDuration(env.K8S_DEPLOY_DURATION)}</td></tr>
+                        <tr><td>Verify Prometheus Integration</td><td>${formatDuration(env.PROM_VERIFY_DURATION)}</td></tr>
+                        <tr><td>Verify Deployment</td><td>${formatDuration(env.DEPLOY_VERIFY_DURATION)}</td></tr>
+                        <tr><td>Health Check</td><td>${formatDuration(env.HEALTH_CHECK_DURATION)}</td></tr>
+                        <tr><td>Display Logs</td><td>${formatDuration(env.LOGS_DURATION)}</td></tr>
+                    </tbody>
                 </table>
             </div>
             
@@ -579,7 +726,7 @@ Generated by Jenkins CI/CD Pipeline with Prometheus Monitoring
         
         <div class="footer">
             <p><strong>Jenkins CI/CD Pipeline with Prometheus</strong></p>
-            <p>This is an automated notification.</p>
+            <p>This is an automated notification - Build ${status} at ${new Date()}</p>
         </div>
     </div>
 </body>
