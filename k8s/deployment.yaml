@@ -31,13 +31,6 @@ spec:
           containerPort: 8082
           protocol: TCP
         
-        # Inject environment variables from Secrets and ConfigMaps
-        envFrom:
-        - secretRef:
-            name: capstone-secrets
-        - configMapRef:
-            name: capstone-config
-            optional: true
         resources:
           requests:
             memory: "512Mi"
