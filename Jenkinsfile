@@ -20,7 +20,7 @@ pipeline {
     }
 
     triggers {
-        githubPush()
+        pollSCM('* * * * *')  // Checks every minute, builds ONLY if changes detected
     }
 
     stages {
