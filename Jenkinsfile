@@ -20,7 +20,7 @@ pipeline {
     }
 
     triggers {
-        pollSCM('* * * * *')
+        githubPush()
     }
 
     stages {
