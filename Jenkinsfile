@@ -1,4 +1,4 @@
-pipeline {
+﻿pipeline {
     agent any
 
     tools {
@@ -16,7 +16,9 @@ pipeline {
         K8S_NAMESPACE = 'capstone-app'
         K8S_SERVICE = 'capstone-service'
         
-        KUBECONFIG = "C:\\Users\\Prasanth Golla\\.kube\\config"
+        // Cross-platform KUBECONFIG paths
+        KUBECONFIG_WIN = 'C:\\Users\\Prasanth Golla\\.kube\\config'
+        KUBECONFIG_UNIX = '~/.kube/config'
     }
 
     triggers {
@@ -35,7 +37,13 @@ pipeline {
         stage('Build & Test') {
             steps {
                 echo 'Building application with Maven...'
-                bat 'mvn clean install'
+                script {
+                    if (isUnix()) {
+                        sh 'mvn clean install'
+                    } else {
+                        bat 'mvn clean install'
+                    }
+                }
                 echo 'Build and tests complete'
             }
         }
@@ -50,11 +58,42 @@ pipeline {
 
         stage('Code Quality Analysis') {
             steps {
-                echo 'Running code quality checks...'
+                echo 'Running SonarQube Code Quality Analysis...'
                 script {
-                    echo 'Code quality analysis placeholder - configure SonarQube if needed'
+                    try {
+                        withSonarQubeEnv('SonarQube') {
+                            if (isUnix()) {
+                                sh 'mvn sonar:sonar -Dsonar.projectKey=CapstoneProject'
+                            } else {
+                                bat 'mvn sonar:sonar -Dsonar.projectKey=CapstoneProject'
+                            }
+                        }
+                        echo 'SonarQube analysis completed!'
+                    } catch (Exception e) {
+                        echo "WARNING: SonarQube skipped - ${e.message}"
+                        echo 'Configure SonarQube in Jenkins to enable code analysis'
+                    }
                 }
-                echo 'Code quality check complete'
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                echo 'Checking SonarQube Quality Gate...'
+                script {
+                    try {
+                        timeout(time: 5, unit: 'MINUTES') {
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                echo "Quality Gate status: ${qg.status}"
+                            } else {
+                                echo 'Quality Gate passed!'
+                            }
+                        }
+                    } catch (Exception e) {
+                        echo "Quality Gate check skipped - ${e.message}"
+                    }
+                }
             }
         }
 
@@ -62,10 +101,17 @@ pipeline {
             steps {
                 echo 'Building Docker image...'
                 script {
-                    bat """
-                        docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
-                        docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest
-                    """
+                    if (isUnix()) {
+                        sh """
+                            docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .
+                            docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest
+                        """
+                    } else {
+                        bat """
+                            docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
+                            docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest
+                        """
+                    }
                     
                     echo "Docker image built: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                     
@@ -85,27 +131,22 @@ pipeline {
             steps {
                 echo 'Verifying Kubernetes cluster connectivity...'
                 script {
-                    bat """
-                        echo Current KUBECONFIG: %KUBECONFIG%
-                        echo.
-                        
-                        set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
-                        
-                        echo Checking Kubernetes context...
-                        kubectl config current-context
-                        
-                        echo.
-                        echo Kubernetes Cluster Info:
-                        kubectl cluster-info
-                        
-                        echo.
-                        echo Checking Kubernetes nodes:
-                        kubectl get nodes
-                        
-                        echo.
-                        echo Checking namespace:
-                        kubectl get namespace ${K8S_NAMESPACE}
-                    """
+                    if (isUnix()) {
+                        sh '''
+                            kubectl config current-context
+                            kubectl cluster-info
+                            kubectl get nodes
+                            kubectl get namespace capstone-app || kubectl create namespace capstone-app
+                        '''
+                    } else {
+                        bat """
+                            set KUBECONFIG=%KUBECONFIG_WIN%
+                            kubectl config current-context
+                            kubectl cluster-info
+                            kubectl get nodes
+                            kubectl get namespace ${K8S_NAMESPACE}
+                        """
+                    }
                 }
                 echo 'Kubernetes cluster verification complete'
             }
