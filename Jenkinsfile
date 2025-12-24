@@ -322,27 +322,32 @@ pipeline {
             steps {
                 echo 'Running application health check...'
                 script {
-                    echo 'Waiting 30 seconds for application to stabilize...'
-                    sleep(time: 30, unit: 'SECONDS')
-                    
-                    try {
-                        echo 'Testing application endpoint...'
-                        def response = bat(
-                            script: 'curl -s -o NUL -w "%%{http_code}" http://localhost:30080',
-                            returnStdout: true
-                        ).trim()
-                        
-                        echo "HTTP Response Code: ${response}"
-                        
-                        if (response == '200') {
-                            echo "Health check PASSED! Application is responding correctly."
-                        } else if (response == '000') {
-                            echo "Warning: Could not connect to application. It may still be starting up."
-                        } else {
-                            echo "Warning: Unexpected response code: ${response}"
+                    echo 'Starting smart health check (timeout 60s)...'
+                    timeout(time: 60, unit: 'SECONDS') {
+                        waitUntil {
+                            try {
+                                def response = bat(
+                                    script: 'curl -s -o NUL -w "%%{http_code}" http://localhost:30080',
+                                    returnStdout: true
+                                ).trim()
+                                
+                                if (response == '200') {
+                                    echo "Application is ready!"
+                                    return true
+                                }
+                                echo "Waiting for application... (Status: ${response})"
+                                return false
+                            } catch (Exception e) {
+                                echo "Check failed: ${e.message}"
+                                return false
+                            }
                         }
-                        
-                        echo 'Testing Prometheus metrics endpoint...'
+                    }
+                    
+                    echo "Health check PASSED! Application is responding correctly."
+                    
+                    echo 'Verifying Prometheus metrics endpoint...'
+                    try {
                         def metricsResponse = bat(
                             script: 'curl -s -o NUL -w "%%{http_code}" http://localhost:30080/actuator/prometheus',
                             returnStdout: true
@@ -353,10 +358,8 @@ pipeline {
                         } else {
                             echo "Warning: Prometheus metrics endpoint returned: ${metricsResponse}"
                         }
-                        
-                    } catch (err) {
-                        echo "Health check could not be completed automatically."
-                        echo "Please verify manually at: http://localhost:30080"
+                    } catch (ignored) {
+                         echo "Warning: Could not verify metrics endpoint."
                     }
                 }
                 echo 'Health check stage complete'
