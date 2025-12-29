@@ -189,34 +189,63 @@ class Dashboard {
 
     displayBuildInfo(build) {
         const status = (build.result || 'BUILDING').toLowerCase();
-        const statusClass = status === 'success' ? 'success' :
-            status === 'failure' ? 'failure' : 'building';
+        const isSuccess = status === 'success';
+        const isFailure = status === 'failure';
+        const isBuilding = !isSuccess && !isFailure;
 
         const duration = build.duration ? this.formatDuration(build.duration) : 'In progress';
         const timestamp = build.timestamp ? new Date(build.timestamp).toLocaleString() : 'Unknown';
+        const timeAgo = build.timestamp ? this.timeAgo(build.timestamp) : '';
+
+        const statusBadge = isSuccess
+            ? '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i data-lucide="check-circle" class="w-3 h-3"></i> SUCCESS</span>'
+            : isFailure
+                ? '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30"><i data-lucide="x-circle" class="w-3 h-3"></i> FAILURE</span>'
+                : '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> BUILDING</span>';
 
         const html = `
-            <div class="build-item">
-                <div class="build-header">
-                    <div class="build-number">Build #${build.number || 'Unknown'}</div>
-                    <div class="build-status ${statusClass}">${status}</div>
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl ${isSuccess ? 'bg-emerald-500/20' : isFailure ? 'bg-red-500/20' : 'bg-amber-500/20'} flex items-center justify-center">
+                            <span class="text-2xl font-bold ${isSuccess ? 'text-emerald-400' : isFailure ? 'text-red-400' : 'text-amber-400'}">#${build.number || '?'}</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-white">Build #${build.number || 'Unknown'}</h3>
+                            <p class="text-sm text-slate-400">${timeAgo}</p>
+                        </div>
+                    </div>
+                    ${statusBadge}
                 </div>
-                <div class="build-info-grid">
-                    <div class="build-info-item">
-                        <div class="build-info-label">Started</div>
-                        <div class="build-info-value">${timestamp}</div>
+                
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                        <div class="flex items-center gap-2 text-slate-400 mb-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span class="text-xs uppercase tracking-wide">Started</span>
+                        </div>
+                        <p class="text-sm font-medium text-white">${timestamp}</p>
                     </div>
-                    <div class="build-info-item">
-                        <div class="build-info-label">Duration</div>
-                        <div class="build-info-value">${duration}</div>
+                    <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                        <div class="flex items-center gap-2 text-slate-400 mb-2">
+                            <i data-lucide="timer" class="w-4 h-4"></i>
+                            <span class="text-xs uppercase tracking-wide">Duration</span>
+                        </div>
+                        <p class="text-sm font-medium text-white">${duration}</p>
                     </div>
-                    <div class="build-info-item">
-                        <div class="build-info-label">Result</div>
-                        <div class="build-info-value">${build.result || 'Building'}</div>
+                    <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                        <div class="flex items-center gap-2 text-slate-400 mb-2">
+                            <i data-lucide="flag" class="w-4 h-4"></i>
+                            <span class="text-xs uppercase tracking-wide">Result</span>
+                        </div>
+                        <p class="text-sm font-medium ${isSuccess ? 'text-emerald-400' : isFailure ? 'text-red-400' : 'text-amber-400'}">${build.result || 'Building...'}</p>
                     </div>
-                    <div class="build-info-item">
-                        <div class="build-info-label">URL</div>
-                        <div class="build-info-value"><a href="${build.url}" target="_blank">View in Jenkins</a></div>
+                    <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                        <div class="flex items-center gap-2 text-slate-400 mb-2">
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                            <span class="text-xs uppercase tracking-wide">Actions</span>
+                        </div>
+                        <a href="${build.url}" target="_blank" class="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">View in Jenkins →</a>
                     </div>
                 </div>
             </div>
@@ -246,6 +275,11 @@ class Dashboard {
 
         if (this.metricsHistory.builds.length > 20) {
             this.metricsHistory.builds.shift();
+        }
+
+        // Re-initialize Lucide icons for the new content
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
     }
 
@@ -282,14 +316,21 @@ class Dashboard {
                         const status = (b.result || 'BUILDING').toLowerCase();
                         const timeAgo = this.timeAgo(b.timestamp);
                         const duration = this.formatDuration(b.duration);
+                        const isSuccess = status === 'success';
+                        const isFailure = status === 'failure';
 
                         html += `
-                            <div class="history-item ${status}" onclick="window.app.showBuildDetails(${b.number})">
-                                <div class="history-header">
-                                    <span class="history-number">#${b.number}</span>
-                                    <span class="history-time">${timeAgo}</span>
+                            <div class="group flex items-center gap-3 p-3 rounded-xl ${isSuccess ? 'bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20' : isFailure ? 'bg-red-500/5 hover:bg-red-500/10 border border-red-500/20' : 'bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/20'} cursor-pointer transition-all" onclick="window.app.showBuildDetails(${b.number})">
+                                <div class="w-10 h-10 rounded-lg ${isSuccess ? 'bg-emerald-500/20' : isFailure ? 'bg-red-500/20' : 'bg-amber-500/20'} flex items-center justify-center shrink-0">
+                                    <span class="text-sm font-bold ${isSuccess ? 'text-emerald-400' : isFailure ? 'text-red-400' : 'text-amber-400'}">#${b.number}</span>
                                 </div>
-                                <div class="history-duration">${duration} - ${b.result || 'Building'}</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-white">${b.result || 'Building'}</span>
+                                        <span class="text-xs text-slate-500">${timeAgo}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-0.5">${duration}</p>
+                                </div>
                             </div>
                         `;
                     }
@@ -298,10 +339,15 @@ class Dashboard {
                 }
             }
 
-            container.innerHTML = html || '<div class="empty-state"><p>No build history available</p></div>';
+            container.innerHTML = html || '<div class="flex items-center justify-center py-8 text-slate-500"><p>No build history available</p></div>';
+
+            // Re-initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
 
         } catch (error) {
-            container.innerHTML = '<div class="empty-state"><p>Failed to load build history</p></div>';
+            container.innerHTML = '<div class="flex items-center justify-center py-8 text-slate-500"><p>Failed to load build history</p></div>';
         }
     }
 
