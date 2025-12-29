@@ -1,270 +1,393 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CI/CD Dashboard - Capstone Project</title>
-    <link rel="stylesheet" href="index.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        success: { 500: '#22c55e', 600: '#16a34a' },
+                        warning: { 500: '#f59e0b', 600: '#d97706' },
+                        danger: { 500: '#ef4444', 600: '#dc2626' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .animate-pulse-dot {
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+    </style>
 </head>
-<body>
-    <nav class="navbar">
-        <div class="nav-content">
-            <div class="nav-brand">
-                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                </svg>
-                <span>CI/CD Dashboard</span>
-            </div>
-            <div class="nav-actions">
-                <button class="nav-btn" id="fullscreen-btn" title="Toggle Fullscreen">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                    </svg>
-                </button>
-                <button class="nav-btn" id="refresh-all" title="Refresh All">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="23 4 23 10 17 10"></polyline>
-                        <polyline points="1 20 1 14 7 14"></polyline>
-                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                    </svg>
-                </button>
-                <button class="nav-btn" id="theme-toggle" title="Toggle Theme">
-                    <svg class="theme-icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                    <svg class="theme-icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                </button>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                            </path>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                    </div>
+                    <span
+                        class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">CI/CD
+                        Dashboard</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="fullscreen-btn"
+                        class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+                        title="Toggle Fullscreen">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                            </path>
+                        </svg>
+                    </button>
+                    <button id="refresh-all" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+                        title="Refresh All">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </button>
+                    <button id="theme-toggle" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+                        title="Toggle Theme">
+                        <svg class="w-5 h-5 theme-icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <div class="status-bar">
-            <div class="status-item" id="status-jenkins">
-                <div class="status-dot"></div>
-                <span class="status-label">Jenkins</span>
-                <span class="status-time" id="jenkins-time"></span>
-            </div>
-            <div class="status-item" id="status-app">
-                <div class="status-dot"></div>
-                <span class="status-label">Application</span>
-                <span class="status-time" id="app-time"></span>
-            </div>
-            <div class="status-item" id="status-k8s">
-                <div class="status-dot"></div>
-                <span class="status-label">Kubernetes</span>
-                <span class="status-time" id="k8s-time"></span>
-            </div>
-            <div class="status-item" id="status-prometheus">
-                <div class="status-dot"></div>
-                <span class="status-label">Prometheus</span>
-                <span class="status-time" id="prom-time"></span>
-            </div>
-        </div>
-
-        <div class="metrics-grid">
-            <div class="metric-card" onclick="window.app.showMetricDetails('jobs')">
-                <div class="metric-icon jobs">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="9" y1="9" x2="15" y2="15"></line>
-                        <line x1="15" y1="9" x2="9" y2="15"></line>
-                    </svg>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-value" id="metric-jobs">0</div>
-                    <div class="metric-label">Total Jobs</div>
-                    <div class="metric-trend" id="jobs-trend"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <!-- Status Bar -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div id="status-jenkins"
+                class="flex items-center gap-3 bg-slate-900 rounded-xl px-4 py-3 border border-slate-800">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse-dot"></div>
+                <div>
+                    <span class="text-sm font-medium text-slate-300">Jenkins</span>
+                    <span class="text-xs text-slate-500 block" id="jenkins-time"></span>
                 </div>
             </div>
-            <div class="metric-card" onclick="window.app.showMetricDetails('build')">
-                <div class="metric-icon build">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                    </svg>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-value" id="metric-build">-</div>
-                    <div class="metric-label">Last Build</div>
-                    <div class="metric-trend" id="build-trend"></div>
+            <div id="status-app"
+                class="flex items-center gap-3 bg-slate-900 rounded-xl px-4 py-3 border border-slate-800">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse-dot"></div>
+                <div>
+                    <span class="text-sm font-medium text-slate-300">Application</span>
+                    <span class="text-xs text-slate-500 block" id="app-time"></span>
                 </div>
             </div>
-            <div class="metric-card" onclick="window.app.showMetricDetails('duration')">
-                <div class="metric-icon duration">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-value" id="metric-duration">-</div>
-                    <div class="metric-label">Duration</div>
-                    <div class="metric-trend" id="duration-trend"></div>
+            <div id="status-k8s"
+                class="flex items-center gap-3 bg-slate-900 rounded-xl px-4 py-3 border border-slate-800">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse-dot"></div>
+                <div>
+                    <span class="text-sm font-medium text-slate-300">Kubernetes</span>
+                    <span class="text-xs text-slate-500 block" id="k8s-time"></span>
                 </div>
             </div>
-            <div class="metric-card" onclick="window.app.showMetricDetails('cpu')">
-                <div class="metric-icon cpu">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
-                        <rect x="9" y="9" width="6" height="6"></rect>
-                        <line x1="9" y1="1" x2="9" y2="4"></line>
-                        <line x1="15" y1="1" x2="15" y2="4"></line>
-                        <line x1="9" y1="20" x2="9" y2="23"></line>
-                        <line x1="15" y1="20" x2="15" y2="23"></line>
-                        <line x1="20" y1="9" x2="23" y2="9"></line>
-                        <line x1="20" y1="14" x2="23" y2="14"></line>
-                        <line x1="1" y1="9" x2="4" y2="9"></line>
-                        <line x1="1" y1="14" x2="4" y2="14"></line>
-                    </svg>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-value" id="metric-cpu">-</div>
-                    <div class="metric-label">CPU Usage</div>
-                    <div class="metric-trend" id="cpu-trend"></div>
-                </div>
-            </div>
-            <div class="metric-card" onclick="window.app.showMetricDetails('memory')">
-                <div class="metric-icon memory">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-                    </svg>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-value" id="metric-memory">-</div>
-                    <div class="metric-label">Memory</div>
-                    <div class="metric-trend" id="memory-trend"></div>
+            <div id="status-prometheus"
+                class="flex items-center gap-3 bg-slate-900 rounded-xl px-4 py-3 border border-slate-800">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse-dot"></div>
+                <div>
+                    <span class="text-sm font-medium text-slate-300">Prometheus</span>
+                    <span class="text-xs text-slate-500 block" id="prom-time"></span>
                 </div>
             </div>
         </div>
 
-        <div class="grid-layout">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Jenkins Pipeline</h2>
-                    <button class="card-btn" onclick="window.app.refreshJobs()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div onclick="window.app.showMetricDetails('jobs')"
+                class="group cursor-pointer bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-blue-500/50 transition-all hover:shadow-lg hover:shadow-blue-500/10">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="metric-jobs">0</div>
+                        <div class="text-sm text-slate-400">Total Jobs</div>
+                    </div>
+                </div>
+            </div>
+            <div onclick="window.app.showMetricDetails('build')"
+                class="group cursor-pointer bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-emerald-500/50 transition-all hover:shadow-lg hover:shadow-emerald-500/10">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="metric-build">-</div>
+                        <div class="text-sm text-slate-400">Last Build</div>
+                    </div>
+                </div>
+            </div>
+            <div onclick="window.app.showMetricDetails('duration')"
+                class="group cursor-pointer bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-amber-500/50 transition-all hover:shadow-lg hover:shadow-amber-500/10">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="metric-duration">-</div>
+                        <div class="text-sm text-slate-400">Duration</div>
+                    </div>
+                </div>
+            </div>
+            <div onclick="window.app.showMetricDetails('cpu')"
+                class="group cursor-pointer bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-purple-500/50 transition-all hover:shadow-lg hover:shadow-purple-500/10">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                            <rect x="9" y="9" width="6" height="6"></rect>
+                            <line x1="9" y1="1" x2="9" y2="4"></line>
+                            <line x1="15" y1="1" x2="15" y2="4"></line>
+                            <line x1="9" y1="20" x2="9" y2="23"></line>
+                            <line x1="15" y1="20" x2="15" y2="23"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="metric-cpu">-</div>
+                        <div class="text-sm text-slate-400">CPU Usage</div>
+                    </div>
+                </div>
+            </div>
+            <div onclick="window.app.showMetricDetails('memory')"
+                class="group cursor-pointer bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-rose-500/50 transition-all hover:shadow-lg hover:shadow-rose-500/10">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-rose-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="metric-memory">-</div>
+                        <div class="text-sm text-slate-400">Memory</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Two Column Grid -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Jenkins Pipeline Card -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+                    <h2 class="text-lg font-semibold text-white">Jenkins Pipeline</h2>
+                    <button onclick="window.app.refreshJobs()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <polyline points="23 4 23 10 17 10"></polyline>
                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                         </svg>
                     </button>
                 </div>
-                <div class="card-body">
-                    <select id="job-selector" class="job-selector">
+                <div class="p-6 space-y-4">
+                    <select id="job-selector"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
                         <option value="">Loading jobs...</option>
                     </select>
-                    <div id="build-info" class="build-section"></div>
+                    <div id="build-info" class="space-y-3"></div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Build History</h2>
-                    <button class="card-btn" onclick="window.app.loadBuildHistory()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <!-- Build History Card -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+                    <h2 class="text-lg font-semibold text-white">Build History</h2>
+                    <button onclick="window.app.loadBuildHistory()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <polyline points="23 4 23 10 17 10"></polyline>
                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                         </svg>
                     </button>
                 </div>
-                <div class="card-body">
-                    <div id="build-history" class="build-history"></div>
+                <div class="p-6">
+                    <div id="build-history" class="space-y-2 max-h-64 overflow-y-auto scrollbar-thin"></div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">System Metrics</h2>
-                <div class="card-actions">
-                    <button class="card-btn" onclick="window.app.exportMetrics()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- System Metrics Card -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+                <h2 class="text-lg font-semibold text-white">System Metrics</h2>
+                <div class="flex gap-2">
+                    <button onclick="window.app.exportMetrics()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors" title="Export">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
                     </button>
-                    <button class="card-btn" onclick="window.app.refreshMetrics()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button onclick="window.app.refreshMetrics()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors" title="Refresh">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <polyline points="23 4 23 10 17 10"></polyline>
                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                         </svg>
                     </button>
                 </div>
             </div>
-            <div class="card-body">
-                <div id="metrics-grid" class="system-metrics"></div>
+            <div class="p-6">
+                <div id="metrics-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Console Output</h2>
-                <div class="card-actions">
-                    <button class="card-btn" onclick="window.app.clearConsole()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- Console Output Card -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+                <h2 class="text-lg font-semibold text-white">Console Output</h2>
+                <div class="flex gap-2">
+                    <button onclick="window.app.clearConsole()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors" title="Clear">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
                         </svg>
                     </button>
-                    <button class="card-btn" id="auto-scroll-btn" onclick="window.app.toggleAutoScroll()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button id="auto-scroll-btn" onclick="window.app.toggleAutoScroll()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors" title="Auto Scroll">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <polyline points="17 13 12 18 7 13"></polyline>
                             <polyline points="17 6 12 11 7 6"></polyline>
                         </svg>
                     </button>
-                    <button class="card-btn" onclick="window.app.downloadConsole()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button onclick="window.app.downloadConsole()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors" title="Download">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
                     </button>
-                    <button class="card-btn" onclick="window.app.refreshConsole()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button onclick="window.app.refreshConsole()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors" title="Refresh">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <polyline points="23 4 23 10 17 10"></polyline>
                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                         </svg>
                     </button>
                 </div>
             </div>
-            <div class="card-body console-wrapper">
-                <div class="console-search">
-                    <input type="text" id="console-search" placeholder="Search console output...">
+            <div class="p-4">
+                <input type="text" id="console-search" placeholder="Search console output..."
+                    class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none mb-4">
+                <div id="console-output"
+                    class="bg-slate-950 rounded-xl p-4 h-64 overflow-y-auto scrollbar-thin font-mono text-sm text-slate-300">
                 </div>
-                <div class="console" id="console-output"></div>
             </div>
         </div>
 
-        <div id="toast-container"></div>
-        <div id="modal-overlay" class="modal-overlay">
-            <div class="modal">
-                <div class="modal-header">
-                    <h3 id="modal-title"></h3>
-                    <button class="modal-close" onclick="window.app.closeModal()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- Toast Container -->
+        <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+        <!-- Modal -->
+        <div id="modal-overlay"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+            <div class="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-lg mx-4 shadow-2xl">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+                    <h3 id="modal-title" class="text-lg font-semibold text-white"></h3>
+                    <button onclick="window.app.closeModal()"
+                        class="p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                        <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
                     </button>
                 </div>
-                <div class="modal-body" id="modal-body"></div>
+                <div id="modal-body" class="p-6"></div>
             </div>
         </div>
     </div>
 
     <script src="index.js"></script>
 </body>
+
 </html>
