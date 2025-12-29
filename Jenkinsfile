@@ -58,13 +58,11 @@ pipeline {
                 echo 'Stage 2: Code Quality Analysis'
                 echo '========================================='
                 script {
-                    echo 'Code quality analysis placeholder - configure SonarQube for production'
-                    // Uncomment below when SonarQube is configured:
-                    // withSonarQubeEnv('SonarQube') {
-                    //     bat 'mvn sonar:sonar'
-                    // }
+                    withSonarQubeEnv('SonarQube') {
+                        bat 'mvn sonar:sonar -Dsonar.projectKey=CapstoneProject -Dsonar.projectName="Capstone Project"'
+                    }
                 }
-                echo 'Code quality check complete'
+                echo 'SonarQube analysis complete'
             }
         }
 
