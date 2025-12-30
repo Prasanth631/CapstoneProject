@@ -49,22 +49,7 @@ pipeline {
             }
         }
 
-        // ============================================
-        // STAGE 2: CODE QUALITY
-        // ============================================
-        stage('Code Quality') {
-            steps {
-                echo '========================================='
-                echo 'Stage 2: Code Quality Analysis'
-                echo '========================================='
-                script {
-                    withSonarQubeEnv('SonarQube') {
-                        bat 'mvn sonar:sonar -Dsonar.projectKey=CapstoneProject -Dsonar.projectName="Capstone Project"'
-                    }
-                }
-                echo 'SonarQube analysis complete'
-            }
-        }
+        // SonarQube stage removed - using JaCoCo for coverage
 
         // ============================================
         // STAGE 3: DOCKER BUILD & PUSH
