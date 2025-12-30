@@ -224,8 +224,22 @@ class Dashboard {
         const isBuilding = !isSuccess && !isFailure;
 
         const duration = build.duration ? this.formatDuration(build.duration) : 'In progress';
-        const timestamp = build.timestamp ? new Date(build.timestamp).toLocaleString() : 'Unknown';
-        const timeAgo = build.timestamp ? this.timeAgo(build.timestamp) : '';
+
+        // Format timestamp correctly
+        let timestamp = 'Unknown';
+        let timeAgo = '';
+        if (build.timestamp) {
+            const buildDate = new Date(build.timestamp);
+            timestamp = buildDate.toLocaleDateString('en-IN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            timeAgo = this.timeAgo(build.timestamp);
+        }
 
         const statusBadge = isSuccess
             ? '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i data-lucide="check-circle" class="w-3 h-3"></i> SUCCESS</span>'
