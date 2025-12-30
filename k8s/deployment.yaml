@@ -39,19 +39,21 @@ spec:
             memory: "1Gi"
             cpu: "500m"
         
-        # Simple TCP probes (works without Actuator)
+        # HTTP Probes (actuator health check)
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /actuator/health
             port: 8082
-          initialDelaySeconds: 10
+          initialDelaySeconds: 20
           periodSeconds: 5
           timeoutSeconds: 3
-          failureThreshold: 3
+          failureThreshold: 5
         
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /actuator/health
             port: 8082
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
