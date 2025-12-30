@@ -41,35 +41,53 @@ class Dashboard {
     }
 
     setupEventListeners() {
-        document.getElementById('theme-toggle').addEventListener('click', () => {
-            this.setTheme(this.theme === 'light' ? 'dark' : 'light');
-        });
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                this.setTheme(this.theme === 'light' ? 'dark' : 'light');
+            });
+        }
 
-        document.getElementById('refresh-all').addEventListener('click', () => {
-            this.refreshAll();
-        });
+        const refreshAll = document.getElementById('refresh-all');
+        if (refreshAll) {
+            refreshAll.addEventListener('click', () => {
+                this.refreshAll();
+            });
+        }
 
-        document.getElementById('fullscreen-btn').addEventListener('click', () => {
-            this.toggleFullscreen();
-        });
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => {
+                this.toggleFullscreen();
+            });
+        }
 
-        document.getElementById('job-selector').addEventListener('change', (e) => {
-            if (e.target.value) {
-                this.currentJob = e.target.value;
-                this.loadBuildInfo();
-                this.loadBuildHistory();
-            }
-        });
+        const jobSelector = document.getElementById('job-selector');
+        if (jobSelector) {
+            jobSelector.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    this.currentJob = e.target.value;
+                    this.loadBuildInfo();
+                    this.loadBuildHistory();
+                }
+            });
+        }
 
-        document.getElementById('console-search').addEventListener('input', (e) => {
-            this.searchConsole(e.target.value);
-        });
+        const consoleSearch = document.getElementById('console-search');
+        if (consoleSearch) {
+            consoleSearch.addEventListener('input', (e) => {
+                this.searchConsole(e.target.value);
+            });
+        }
 
-        document.getElementById('modal-overlay').addEventListener('click', (e) => {
-            if (e.target.id === 'modal-overlay') {
-                this.closeModal();
-            }
-        });
+        const modalOverlay = document.getElementById('modal-overlay');
+        if (modalOverlay) {
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target.id === 'modal-overlay') {
+                    this.closeModal();
+                }
+            });
+        }
     }
 
     startAutoRefresh() {
