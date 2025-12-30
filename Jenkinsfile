@@ -113,6 +113,7 @@ pipeline {
                             
                             echo.
                             echo Applying Kubernetes manifests...
+                            kubectl apply -f k8s/secrets.yaml --namespace=${K8S_NAMESPACE}
                             kubectl apply -f k8s/configmap.yaml --namespace=${K8S_NAMESPACE}
                             kubectl apply -f k8s/service.yaml --namespace=${K8S_NAMESPACE}
                             kubectl apply -f k8s/deployment.yaml --namespace=${K8S_NAMESPACE}

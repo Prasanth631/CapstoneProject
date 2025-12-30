@@ -26,6 +26,19 @@ spec:
       - name: capstone-container
         image: prasanth631/capstone_pro:latest
         imagePullPolicy: Always
+        env:
+          - name: JENKINS_URL
+            value: "http://host.docker.internal:8080"
+          - name: JENKINS_USER
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-credentials
+                key: username
+          - name: JENKINS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-credentials
+                key: token
         ports:
         - name: http
           containerPort: 8082
