@@ -140,18 +140,30 @@ class Dashboard {
                 }
                 this.lastMetrics.jobs = jobCount;
 
-                const defaultJob = data.jobs.find(j => j.name.toLowerCase().includes('automated')) || data.jobs[0];
+                // Improved job selection logic
+                let defaultJob = data.jobs.find(j => j.name.toLowerCase().includes('automated'));
+
+                // If not found, use the first job available
+                if (!defaultJob && data.jobs.length > 0) {
+                    defaultJob = data.jobs[0];
+                }
+
                 if (defaultJob) {
                     this.currentJob = defaultJob.name;
                     selector.value = this.currentJob;
+                    console.log('Selected job:', this.currentJob); // Debug log
                     this.loadBuildInfo();
                     this.loadBuildHistory();
+                } else {
+                    console.warn('No jobs found to select');
                 }
             } else {
                 this.showEmptyState('build-info', 'No Jenkins jobs found');
+                console.warn('Job list is empty or API returned error');
             }
         } catch (error) {
-            this.showToast('error', 'Load Failed', 'Could not load Jenkins jobs');
+            console.error('Error loading jobs:', error);
+            this.showToast('error', 'Load Failed', 'Could not load Jenkins jobs. Check console for details.');
         }
     }
 
