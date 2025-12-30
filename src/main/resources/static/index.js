@@ -660,30 +660,49 @@ class Dashboard {
 
     showToast(type, title, message) {
         const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+        if (!container) return;
 
-        const icons = {
-            success: '<circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path>',
+        const toast = document.createElement('div');
+
+        const colors = {
+            success: 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400',
+            error: 'bg-red-500/20 border-red-500/50 text-red-400',
+            warning: 'bg-amber-500/20 border-amber-500/50 text-amber-400',
+            info: 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+        };
+
+        const iconPaths = {
+            success: '<path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="10"></circle>',
             error: '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>',
             warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>',
             info: '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>'
         };
 
+        toast.className = `flex items-center gap-3 p-4 rounded-xl border backdrop-blur-sm shadow-lg ${colors[type] || colors.info} animate-pulse`;
+        toast.style.animation = 'slideIn 0.3s ease-out';
+
         toast.innerHTML = `
-            <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                ${icons[type] || icons.info}
+            <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                ${iconPaths[type] || iconPaths.info}
             </svg>
-            <div class="toast-content">
-                <div class="toast-title">${title}</div>
-                <div class="toast-message">${message}</div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium">${title}</p>
+                <p class="text-xs opacity-80">${message}</p>
             </div>
+            <button onclick="this.parentElement.remove()" class="p-1 hover:bg-white/10 rounded transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         `;
 
         container.appendChild(toast);
 
         setTimeout(() => {
-            toast.style.animation = 'slideIn 0.3s ease-out reverse';
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            toast.style.transition = 'all 0.3s ease-out';
             setTimeout(() => toast.remove(), 300);
         }, 4000);
     }
