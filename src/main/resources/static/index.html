@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CI/CD Dashboard - Capstone Project</title>
+    <title>CI/CD Dashboard - Enterprise Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -17,38 +18,71 @@
                     },
                     animation: {
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'fade-in': 'fadeIn 0.3s ease-in'
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
                     }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .glass-effect {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.5));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+    </style>
 </head>
 
 <body class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 min-h-screen font-sans">
 
     <!-- Navigation -->
-    <header class="border-b border-slate-800/50 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header class="border-b border-slate-800/50 glass-effect sticky top-0 z-50">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                        <i data-lucide="box" class="w-5 h-5 text-white"></i>
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                        <i data-lucide="activity" class="w-5 h-5 text-white"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg font-semibold text-white">CI/CD Dashboard</h1>
-                        <p class="text-xs text-slate-400">Capstone Project</p>
+                        <h1 class="text-lg font-bold text-white">CI/CD Analytics Dashboard</h1>
+                        <p class="text-xs text-slate-400">Enterprise Monitoring & Insights</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="refresh-all"
-                        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 transition-all text-sm">
+                    <button id="refresh-all" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 transition-all text-sm">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                         <span class="hidden sm:inline">Refresh</span>
                     </button>
-                    <button id="fullscreen-btn"
-                        class="p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 transition-all">
+                    <button id="fullscreen-btn" class="p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 transition-all">
                         <i data-lucide="maximize-2" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -56,320 +90,184 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <main class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        <!-- Status Indicators -->
-        <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div id="status-jenkins"
-                class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 p-4 hover:border-emerald-500/30 transition-all">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <div class="absolute inset-0 w-3 h-3 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
+        <!-- KPI Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Builds -->
+            <div class="gradient-border rounded-2xl p-6 animate-slide-up">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                        <i data-lucide="layers" class="w-6 h-6 text-blue-400"></i>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white">Jenkins</p>
-                        <p class="text-xs text-slate-400" id="jenkins-time">Checking...</p>
-                    </div>
-                    <i data-lucide="server" class="w-5 h-5 text-slate-500"></i>
+                    <span class="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">Total</span>
+                </div>
+                <h3 class="text-3xl font-bold text-white mb-1" id="kpi-total-builds">0</h3>
+                <p class="text-sm text-slate-400">Total Builds</p>
+                <div class="mt-3 flex items-center gap-2 text-xs">
+                    <span class="text-emerald-400" id="kpi-builds-trend">+0%</span>
+                    <span class="text-slate-500">vs last period</span>
                 </div>
             </div>
-            <div id="status-app"
-                class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 p-4 hover:border-blue-500/30 transition-all">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white">Application</p>
-                        <p class="text-xs text-slate-400" id="app-time">Checking...</p>
-                    </div>
-                    <i data-lucide="globe" class="w-5 h-5 text-slate-500"></i>
-                </div>
-            </div>
-            <div id="status-k8s"
-                class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 p-4 hover:border-purple-500/30 transition-all">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white">Kubernetes</p>
-                        <p class="text-xs text-slate-400" id="k8s-time">Checking...</p>
-                    </div>
-                    <i data-lucide="layers" class="w-5 h-5 text-slate-500"></i>
-                </div>
-            </div>
-            <div id="status-prometheus"
-                class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 p-4 hover:border-orange-500/30 transition-all">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white">Prometheus</p>
-                        <p class="text-xs text-slate-400" id="prom-time">Checking...</p>
-                    </div>
-                    <i data-lucide="activity" class="w-5 h-5 text-slate-500"></i>
-                </div>
-            </div>
-        </section>
 
-        <!-- Key Metrics -->
-        <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div onclick="window.app.showMetricDetails('jobs')"
-                class="group cursor-pointer rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 p-6 hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all">
-                <div class="flex items-start justify-between mb-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i data-lucide="briefcase" class="w-6 h-6 text-blue-400"></i>
+            <!-- Success Rate -->
+            <div class="gradient-border rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.1s">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                        <i data-lucide="check-circle" class="w-6 h-6 text-emerald-400"></i>
                     </div>
-                    <span id="jobs-trend" class="text-xs"></span>
+                    <span class="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Rate</span>
                 </div>
-                <p class="text-3xl font-bold text-white mb-1" id="metric-jobs">0</p>
-                <p class="text-sm text-slate-400">Total Jobs</p>
-            </div>
-            <div onclick="window.app.showMetricDetails('build')"
-                class="group cursor-pointer rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 p-6 hover:border-emerald-400/40 hover:shadow-lg hover:shadow-emerald-500/10 transition-all">
-                <div class="flex items-start justify-between mb-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i data-lucide="hash" class="w-6 h-6 text-emerald-400"></i>
+                <h3 class="text-3xl font-bold text-white mb-1" id="kpi-success-rate">0%</h3>
+                <p class="text-sm text-slate-400">Success Rate</p>
+                <div class="mt-3 flex items-center gap-2 text-xs">
+                    <div class="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500" id="success-rate-bar" style="width: 0%"></div>
                     </div>
-                    <span id="build-trend" class="text-xs"></span>
                 </div>
-                <p class="text-3xl font-bold text-white mb-1" id="metric-build">-</p>
-                <p class="text-sm text-slate-400">Latest Build</p>
             </div>
-            <div onclick="window.app.showMetricDetails('duration')"
-                class="group cursor-pointer rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 p-6 hover:border-amber-400/40 hover:shadow-lg hover:shadow-amber-500/10 transition-all">
-                <div class="flex items-start justify-between mb-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+
+            <!-- Avg Duration -->
+            <div class="gradient-border rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.2s">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
                         <i data-lucide="clock" class="w-6 h-6 text-amber-400"></i>
                     </div>
-                    <span id="duration-trend" class="text-xs"></span>
+                    <span class="text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">Avg</span>
                 </div>
-                <p class="text-3xl font-bold text-white mb-1" id="metric-duration">-</p>
-                <p class="text-sm text-slate-400">Build Duration</p>
+                <h3 class="text-3xl font-bold text-white mb-1" id="kpi-avg-duration">0s</h3>
+                <p class="text-sm text-slate-400">Avg Build Time</p>
+                <div class="mt-3 flex items-center gap-2 text-xs">
+                    <span class="text-amber-400" id="kpi-duration-trend">±0%</span>
+                    <span class="text-slate-500">vs last period</span>
+                </div>
             </div>
-            <div onclick="window.app.showMetricDetails('cpu')"
-                class="group cursor-pointer rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 p-6 hover:border-purple-400/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all">
-                <div class="flex items-start justify-between mb-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+
+            <!-- System Health -->
+            <div class="gradient-border rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.3s">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
                         <i data-lucide="cpu" class="w-6 h-6 text-purple-400"></i>
                     </div>
-                    <span id="cpu-trend" class="text-xs"></span>
+                    <span class="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">Live</span>
                 </div>
-                <p class="text-3xl font-bold text-white mb-1" id="metric-cpu">-</p>
+                <h3 class="text-3xl font-bold text-white mb-1" id="kpi-cpu-usage">0%</h3>
                 <p class="text-sm text-slate-400">CPU Usage</p>
-            </div>
-            <div onclick="window.app.showMetricDetails('memory')"
-                class="group cursor-pointer rounded-2xl bg-gradient-to-br from-rose-500/10 to-rose-600/5 border border-rose-500/20 p-6 hover:border-rose-400/40 hover:shadow-lg hover:shadow-rose-500/10 transition-all">
-                <div class="flex items-start justify-between mb-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-rose-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i data-lucide="database" class="w-6 h-6 text-rose-400"></i>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <span class="text-slate-500">Memory:</span>
+                        <span class="text-white ml-1" id="kpi-memory">0%</span>
                     </div>
-                    <span id="memory-trend" class="text-xs"></span>
+                    <div>
+                        <span class="text-slate-500">Threads:</span>
+                        <span class="text-white ml-1" id="kpi-threads">0</span>
+                    </div>
                 </div>
-                <p class="text-3xl font-bold text-white mb-1" id="metric-memory">-</p>
-                <p class="text-sm text-slate-400">Memory Usage</p>
             </div>
         </section>
 
-        <!-- Main Content Grid -->
-        <div class="grid lg:grid-cols-3 gap-6">
-
-            <!-- Current Build Details -->
-            <div class="lg:col-span-2 rounded-2xl bg-slate-900/50 border border-slate-800/50 overflow-hidden">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="play-circle" class="w-5 h-5 text-indigo-400"></i>
-                        <h2 class="text-lg font-semibold text-white">Current Build</h2>
+        <!-- Charts Row -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Build Trend Chart -->
+            <div class="glass-effect rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white">Build Trends</h2>
+                        <p class="text-xs text-slate-400 mt-1">Last 10 builds performance</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <select id="job-selector"
-                            class="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
-                            <option value="">Loading jobs...</option>
-                        </select>
-                        <button onclick="window.app.refreshJobs()"
-                            class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
+                        <button class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Refresh">
                             <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-400"></i>
                         </button>
                     </div>
                 </div>
-                <div id="build-info" class="p-6">
-                    <div class="flex items-center justify-center py-12 text-slate-500">
-                        <i data-lucide="loader-2" class="w-6 h-6 animate-spin mr-2"></i>
-                        Loading build information...
-                    </div>
+                <div class="h-64">
+                    <canvas id="buildTrendChart"></canvas>
                 </div>
             </div>
 
-            <!-- Build History -->
-            <div class="rounded-2xl bg-slate-900/50 border border-slate-800/50 overflow-hidden">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="history" class="w-5 h-5 text-emerald-400"></i>
-                        <h2 class="text-lg font-semibold text-white">Build History</h2>
+            <!-- Success/Failure Distribution -->
+            <div class="glass-effect rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white">Build Status Distribution</h2>
+                        <p class="text-xs text-slate-400 mt-1">Success vs Failure ratio</p>
                     </div>
-                    <button onclick="window.app.loadBuildHistory()"
-                        class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
-                        <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-400"></i>
-                    </button>
                 </div>
-                <div id="build-history" class="p-4 max-h-96 overflow-y-auto space-y-2">
-                    <div class="flex items-center justify-center py-12 text-slate-500">
-                        <i data-lucide="loader-2" class="w-6 h-6 animate-spin mr-2"></i>
-                        Loading...
-                    </div>
+                <div class="h-64">
+                    <canvas id="statusDistributionChart"></canvas>
                 </div>
             </div>
-        </div>
-
-        <!-- System Metrics & Console -->
-        <div class="grid lg:grid-cols-2 gap-6">
-
-            <!-- System Metrics -->
-            <div class="rounded-2xl bg-slate-900/50 border border-slate-800/50 overflow-hidden">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="gauge" class="w-5 h-5 text-purple-400"></i>
-                        <h2 class="text-lg font-semibold text-white">System Metrics</h2>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="window.app.exportMetrics()"
-                            class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Export">
-                            <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
-                        </button>
-                        <button onclick="window.app.refreshMetrics()"
-                            class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Refresh">
-                            <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-400"></i>
-                        </button>
-                    </div>
-                </div>
-                <div id="metrics-grid" class="p-6 grid grid-cols-2 gap-4">
-                    <div class="flex items-center justify-center py-8 text-slate-500 col-span-2">
-                        <i data-lucide="loader-2" class="w-6 h-6 animate-spin mr-2"></i>
-                        Loading metrics...
-                    </div>
-                </div>
-            </div>
-
-            <!-- Console Output -->
-            <div class="rounded-2xl bg-slate-900/50 border border-slate-800/50 overflow-hidden">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="terminal" class="w-5 h-5 text-green-400"></i>
-                        <h2 class="text-lg font-semibold text-white">Console Output</h2>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="window.app.clearConsole()"
-                            class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Clear">
-                            <i data-lucide="trash-2" class="w-4 h-4 text-slate-400"></i>
-                        </button>
-                        <button id="auto-scroll-btn" onclick="window.app.toggleAutoScroll()"
-                            class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Auto Scroll">
-                            <i data-lucide="chevrons-down" class="w-4 h-4 text-slate-400"></i>
-                        </button>
-                        <button onclick="window.app.downloadConsole()"
-                            class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Download">
-                            <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
-                        </button>
-                        <button onclick="window.app.refreshConsole()"
-                            class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Refresh">
-                            <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-400"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="p-4">
-                    <div class="relative mb-4">
-                        <i data-lucide="search"
-                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
-                        <input type="text" id="console-search" placeholder="Search console output..."
-                            class="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
-                    </div>
-                    <div id="console-output"
-                        class="bg-slate-950/50 rounded-xl p-4 h-64 overflow-y-auto font-mono text-xs text-slate-300 leading-relaxed">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Links -->
-        <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <a href="http://localhost:8080" target="_blank"
-                class="group flex items-center gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800/50 hover:border-indigo-500/30 hover:bg-slate-800/30 transition-all">
-                <div
-                    class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i data-lucide="external-link" class="w-5 h-5 text-indigo-400"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-white">Jenkins</p>
-                    <p class="text-xs text-slate-400">View CI Server</p>
-                </div>
-            </a>
-            <a href="https://hub.docker.com/r/prasanth631/capstone_pro" target="_blank"
-                class="group flex items-center gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800/50 hover:border-cyan-500/30 hover:bg-slate-800/30 transition-all">
-                <div
-                    class="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i data-lucide="container" class="w-5 h-5 text-cyan-400"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-white">Docker Hub</p>
-                    <p class="text-xs text-slate-400">View Images</p>
-                </div>
-            </a>
-            <a href="http://localhost:30090" target="_blank"
-                class="group flex items-center gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800/50 hover:border-orange-500/30 hover:bg-slate-800/30 transition-all">
-                <div
-                    class="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i data-lucide="line-chart" class="w-5 h-5 text-orange-400"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-white">Prometheus</p>
-                    <p class="text-xs text-slate-400">Metrics</p>
-                </div>
-            </a>
-            <a href="http://localhost:30080/actuator/health" target="_blank"
-                class="group flex items-center gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800/50 hover:border-emerald-500/30 hover:bg-slate-800/30 transition-all">
-                <div
-                    class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i data-lucide="heart-pulse" class="w-5 h-5 text-emerald-400"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-white">Health Check</p>
-                    <p class="text-xs text-slate-400">App Status</p>
-                </div>
-            </a>
         </section>
+
+        <!-- Build History Table -->
+        <section class="glass-effect rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-white">Recent Build History</h2>
+                    <p class="text-xs text-slate-400 mt-1">Latest builds from database</p>
+                </div>
+                <select id="history-filter" class="px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm text-white">
+                    <option value="7">Last 7 days</option>
+                    <option value="14">Last 14 days</option>
+                    <option value="30">Last 30 days</option>
+                </select>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-800">
+                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Build #</th>
+                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Job Name</th>
+                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Status</th>
+                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Duration</th>
+                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="build-history-table" class="divide-y divide-slate-800">
+                        <tr>
+                            <td colspan="5" class="text-center py-8 text-slate-500">
+                                <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
+                                <p>Loading build history...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- System Metrics Timeline -->
+        <section class="glass-effect rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-white">System Metrics Timeline</h2>
+                    <p class="text-xs text-slate-400 mt-1">CPU & Memory usage over time</p>
+                </div>
+                <select id="metrics-timeframe" class="px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm text-white">
+                    <option value="6">Last 6 hours</option>
+                    <option value="12">Last 12 hours</option>
+                    <option value="24" selected>Last 24 hours</option>
+                </select>
+            </div>
+            <div class="h-64">
+                <canvas id="metricsTimelineChart"></canvas>
+            </div>
+        </section>
+
     </main>
 
     <!-- Toast Container -->
-    <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
-
-    <!-- Modal -->
-    <div id="modal-overlay"
-        class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50">
-        <div class="bg-slate-900 rounded-2xl border border-slate-700/50 w-full max-w-lg mx-4 shadow-2xl">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
-                <h3 id="modal-title" class="text-lg font-semibold text-white"></h3>
-                <button onclick="window.app.closeModal()"
-                    class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
-                    <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
-                </button>
-            </div>
-            <div id="modal-body" class="p-6"></div>
-        </div>
-    </div>
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <script src="index.js"></script>
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
+        
+        // Initialize dashboard
+        window.app = new Dashboard();
     </script>
+
 </body>
 
 </html>
