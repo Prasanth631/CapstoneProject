@@ -1,8 +1,12 @@
 package com.example.login;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+
+import com.example.login.service.BuildHistoryService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/jenkins")
@@ -28,7 +36,11 @@ public class JenkinsProxyController {
     @Value("${jenkins.token}")
     private String jenkinsToken;
 
+    @Autowired(required = false)
+    private BuildHistoryService buildHistoryService;
+
     private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private HttpHeaders createAuthHeaders() {
         HttpHeaders headers = new HttpHeaders();
@@ -51,6 +63,32 @@ public class JenkinsProxyController {
             HttpEntity<String> entity = new HttpEntity<>(createAuthHeaders());
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
             System.out.println("DEBUG: Response status: " + response.getStatusCode());
+
+            // Save build data to database if service is available
+            if (buildHistoryService != null && response.getBody() != null) {
+                try {
+                    JsonNode buildData = objectMapper.readTree(response.getBody());
+
+                    Integer buildNumber = buildData.has("number") ? buildData.get("number").asInt() : null;
+                    String status = buildData.has("result") && !buildData.get("result").isNull()
+                            ? buildData.get("result").asText()
+                            : "BUILDING";
+                    Long duration = buildData.has("duration") ? buildData.get("duration").asLong() : null;
+                    Long timestamp = buildData.has("timestamp") ? buildData.get("timestamp").asLong() : null;
+
+                    if (buildNumber != null && timestamp != null) {
+                        LocalDateTime buildTime = LocalDateTime.ofInstant(
+                                Instant.ofEpochMilli(timestamp),
+                                ZoneId.systemDefault());
+
+                        buildHistoryService.saveBuild(jobName, buildNumber, status, duration, buildTime);
+                        System.out.println("DEBUG: Saved build #" + buildNumber + " to database");
+                    }
+                } catch (Exception e) {
+                    // Log error but don't fail the request
+                    System.err.println("DEBUG: Failed to save build to database: " + e.getMessage());
+                }
+            }
 
             return ResponseEntity.ok(response.getBody());
         } catch (HttpClientErrorException e) {

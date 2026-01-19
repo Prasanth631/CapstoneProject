@@ -98,6 +98,15 @@ pipeline {
                             
                             echo.
                             echo Applying Kubernetes manifests...
+                            
+                            echo.
+                            echo Deploying PostgreSQL Database...
+                            kubectl apply -f k8s/postgres-secret.yaml --namespace=${K8S_NAMESPACE}
+                            kubectl apply -f k8s/postgres-service.yaml --namespace=${K8S_NAMESPACE}
+                            kubectl apply -f k8s/postgres-statefulset.yaml --namespace=${K8S_NAMESPACE}
+                            
+                            echo.
+                            echo Deploying Application...
                             kubectl apply -f k8s/secrets.yaml --namespace=${K8S_NAMESPACE}
                             kubectl apply -f k8s/configmap.yaml --namespace=${K8S_NAMESPACE}
                             kubectl apply -f k8s/service.yaml --namespace=${K8S_NAMESPACE}
