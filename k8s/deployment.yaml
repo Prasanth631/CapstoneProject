@@ -39,6 +39,24 @@ spec:
               secretKeyRef:
                 name: jenkins-credentials
                 key: token
+          # Database configuration
+          - name: DB_HOST
+            value: "postgres.capstone-app.svc.cluster.local"
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: database
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: username
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: password
         ports:
         - name: http
           containerPort: 8082
