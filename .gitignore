@@ -31,3 +31,23 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Environment Files ###
+.env
+.env.local
+.env.*.local
+
+### OS Files ###
+.DS_Store
+Thumbs.db
+*~
+
+### Logs ###
+*.log
+logs/
+
+### Temporary Files ###
+*.tmp
+*.temp
+*.swp
+*.swo
