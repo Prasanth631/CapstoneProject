@@ -41,10 +41,6 @@ pipeline {
                 echo 'Building application with Maven...'
                 bat 'mvn clean install -DskipTests'
                 
-                // Publish Test Results
-                echo 'Publishing test results...'
-                junit 'target/surefire-reports/*.xml'
-                
                 echo 'Build & Test complete'
             }
         }
