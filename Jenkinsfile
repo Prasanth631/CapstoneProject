@@ -48,29 +48,20 @@ pipeline {
         // SonarQube stage removed - using JaCoCo for coverage
 
         // ============================================
-        // STAGE 3: DOCKER BUILD & PUSH
+        // STAGE 3: DOCKER BUILD (LOCAL ONLY)
         // ============================================
-        stage('Docker Build & Push') {
+        stage('Docker Build') {
             steps {
                 echo '========================================='
-                echo 'Stage 3: Docker Build & Push'
+                echo 'Stage 3: Docker Build (Local)'
                 echo '========================================='
                 script {
-                    // Build Docker image
+                    // Build Docker image locally
                     bat """
-                        docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
-                        docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest
+                        docker build -t %DOCKER_IMAGE%:latest .
                     """
-                    echo "Docker image built: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
-                    
-                    // Push to Docker Hub
-                    echo 'Pushing image to Docker Hub...'
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
-                        def app = docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}")
-                        app.push()
-                        app.push("latest")
-                    }
-                    echo 'Docker image pushed to Docker Hub'
+                    echo "Docker image built locally: ${DOCKER_IMAGE}:latest"
+                    echo "Note: Skipping Docker Hub push (configure credentials to enable)"
                 }
             }
         }
@@ -109,8 +100,8 @@ pipeline {
                             kubectl apply -f k8s/deployment.yaml --namespace=${K8S_NAMESPACE}
                             
                             echo.
-                            echo Updating deployment image to build ${BUILD_NUMBER}...
-                            kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${DOCKER_IMAGE}:${BUILD_NUMBER} --namespace=${K8S_NAMESPACE} --record
+                            echo Restarting deployment to pick up changes...
+                            kubectl rollout restart deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
                             
                             echo.
                             echo Waiting for rollout to complete...
@@ -147,7 +138,7 @@ pipeline {
                             set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                             
                             echo Applying Prometheus configuration...
-                            kubectl apply -f k8s/prometheus-config.yaml
+                            kubectl apply -f k8s/prometheus-config.yaml --namespace=default
                             
                             echo Checking Prometheus deployment...
                             kubectl get deployment prometheus -n default 2>nul
