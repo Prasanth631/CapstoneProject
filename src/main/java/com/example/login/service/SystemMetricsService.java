@@ -47,4 +47,11 @@ public class SystemMetricsService {
 
         return stats;
     }
+
+    /**
+     * Alias for getMetricsFromLastHours for consistency
+     */
+    public List<SystemMetrics> getMetricsHistory(int hours) {
+        return getMetricsFromLastHours(hours);
+    }
 }

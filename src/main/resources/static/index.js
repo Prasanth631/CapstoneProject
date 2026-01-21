@@ -1,557 +1,483 @@
-class Dashboard {
-    constructor() {
-        this.charts = {};
-        this.refreshInterval = null;
-        this.init();
-    }
+// Enterprise Dashboard JavaScript
+// Real-time monitoring and analytics
 
-    init() {
-        this.setupEventListeners();
-        this.loadDashboardData();
-        this.startAutoRefresh();
-    }
+// Configuration
+const CONFIG = {
+    API_BASE_URL: window.location.origin,
+    REFRESH_INTERVAL: 30000, // 30 seconds
+    CHART_ANIMATION_DURATION: 750
+};
 
-    setupEventListeners() {
-        const refreshBtn = document.getElementById('refresh-all');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadDashboardData());
-        }
+// Global state
+let charts = {};
+let refreshInterval = null;
+let allBuilds = [];
 
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        if (fullscreenBtn) {
-            fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
-        }
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Initializing Enterprise Dashboard...');
+    initializeCharts();
+    loadDashboardData();
+    setupEventListeners();
+    startAutoRefresh();
+});
 
-        const historyFilter = document.getElementById('history-filter');
-        if (historyFilter) {
-            historyFilter.addEventListener('change', (e) => {
-                this.loadBuildHistory(parseInt(e.target.value));
-            });
-        }
+// Setup event listeners
+function setupEventListeners() {
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+        loadDashboardData();
+        showNotification('Dashboard refreshed', 'success');
+    });
 
-        const metricsTimeframe = document.getElementById('metrics-timeframe');
-        if (metricsTimeframe) {
-            metricsTimeframe.addEventListener('change', (e) => {
-                this.loadMetricsTimeline(parseInt(e.target.value));
-            });
-        }
-    }
+    document.getElementById('timeRange').addEventListener('change', (e) => {
+        loadDashboardData();
+    });
 
-    async loadDashboardData() {
-        this.showToast('info', 'Refreshing', 'Loading latest data...');
+    document.getElementById('searchBuilds').addEventListener('input', (e) => {
+        filterBuilds(e.target.value);
+    });
 
+    document.getElementById('exportBtn').addEventListener('click', () => {
+        exportBuildsToCSV();
+    });
+}
+
+// Load all dashboard data
+async function loadDashboardData() {
+    try {
+        console.log('📊 Loading dashboard data...');
+        updateLastUpdateTime();
+
+        // Load in parallel
         await Promise.all([
-            this.loadBuildStatistics(),
-            this.loadBuildHistory(7),
-            this.loadMetricsTimeline(24),
-            this.loadCurrentMetrics()
+            loadKPIMetrics(),
+            loadSystemMetrics(),
+            loadBuildStatistics(),
+            loadRecentBuilds()
         ]);
 
-        this.showToast('success', 'Updated', 'Dashboard refreshed successfully');
-    }
-
-    async loadBuildStatistics() {
-        try {
-            const response = await fetch('/api/analytics/builds/statistics');
-            if (!response.ok) throw new Error('Failed to fetch statistics');
-
-            const stats = await response.json();
-
-            // Update KPI cards
-            document.getElementById('kpi-total-builds').textContent = stats.totalBuilds || 0;
-            document.getElementById('kpi-success-rate').textContent =
-                (stats.successRate || 0).toFixed(1) + '%';
-
-            // Update success rate bar
-            const successBar = document.getElementById('success-rate-bar');
-            if (successBar) {
-                successBar.style.width = (stats.successRate || 0) + '%';
-            }
-
-            // Calculate average duration
-            if (stats.averageDurationByJob) {
-                const durations = Object.values(stats.averageDurationByJob);
-                const avgDuration = durations.length > 0
-                    ? durations.reduce((a, b) => a + b, 0) / durations.length
-                    : 0;
-                document.getElementById('kpi-avg-duration').textContent =
-                    this.formatDuration(avgDuration * 1000);
-            }
-
-            // Load charts
-            await this.loadBuildTrendChart();
-            await this.loadStatusDistributionChart(stats.statusBreakdown);
-
-        } catch (error) {
-            console.error('Error loading build statistics:', error);
-            this.showToast('error', 'Error', 'Failed to load build statistics');
-        }
-    }
-
-    async loadBuildTrendChart() {
-        try {
-            const response = await fetch('/api/analytics/builds/recent?limit=10');
-            if (!response.ok) throw new Error('Failed to fetch recent builds');
-
-            const builds = await response.json();
-            builds.reverse(); // Show oldest to newest
-
-            const ctx = document.getElementById('buildTrendChart');
-            if (!ctx) return;
-
-            // Destroy existing chart
-            if (this.charts.buildTrend) {
-                this.charts.buildTrend.destroy();
-            }
-
-            this.charts.buildTrend = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: builds.map(b => `#${b.buildNumber}`),
-                    datasets: [{
-                        label: 'Build Duration (seconds)',
-                        data: builds.map(b => (b.durationMs || 0) / 1000),
-                        borderColor: 'rgb(99, 102, 241)',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: builds.map(b =>
-                            b.status === 'SUCCESS' ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'
-                        ),
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                            titleColor: '#fff',
-                            bodyColor: '#cbd5e1',
-                            borderColor: 'rgba(148, 163, 184, 0.2)',
-                            borderWidth: 1,
-                            padding: 12,
-                            displayColors: false,
-                            callbacks: {
-                                title: (items) => {
-                                    const build = builds[items[0].dataIndex];
-                                    return `Build #${build.buildNumber}`;
-                                },
-                                label: (context) => {
-                                    const build = builds[context.dataIndex];
-                                    return [
-                                        `Duration: ${this.formatDuration(build.durationMs)}`,
-                                        `Status: ${build.status}`,
-                                        `Job: ${build.jobName}`
-                                    ];
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(148, 163, 184, 0.1)'
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                callback: (value) => value + 's'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#94a3b8'
-                            }
-                        }
-                    }
-                }
-            });
-
-        } catch (error) {
-            console.error('Error loading build trend chart:', error);
-        }
-    }
-
-    async loadStatusDistributionChart(statusBreakdown) {
-        const ctx = document.getElementById('statusDistributionChart');
-        if (!ctx) return;
-
-        // Destroy existing chart
-        if (this.charts.statusDistribution) {
-            this.charts.statusDistribution.destroy();
-        }
-
-        const statuses = statusBreakdown || {};
-        const labels = Object.keys(statuses);
-        const data = Object.values(statuses);
-
-        this.charts.statusDistribution = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: [
-                        'rgba(34, 197, 94, 0.8)',   // SUCCESS - green
-                        'rgba(239, 68, 68, 0.8)',   // FAILURE - red
-                        'rgba(251, 191, 36, 0.8)',  // BUILDING - amber
-                        'rgba(148, 163, 184, 0.8)'  // OTHER - gray
-                    ],
-                    borderColor: [
-                        'rgb(34, 197, 94)',
-                        'rgb(239, 68, 68)',
-                        'rgb(251, 191, 36)',
-                        'rgb(148, 163, 184)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            color: '#cbd5e1',
-                            padding: 15,
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                        titleColor: '#fff',
-                        bodyColor: '#cbd5e1',
-                        borderColor: 'rgba(148, 163, 184, 0.2)',
-                        borderWidth: 1,
-                        padding: 12,
-                        callbacks: {
-                            label: (context) => {
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                return `${context.label}: ${context.parsed} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    async loadBuildHistory(days = 7) {
-        try {
-            const response = await fetch(`/api/analytics/builds/history?days=${days}`);
-            if (!response.ok) throw new Error('Failed to fetch build history');
-
-            const builds = await response.json();
-            const tbody = document.getElementById('build-history-table');
-
-            if (builds.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center py-8 text-slate-500">
-                            <i data-lucide="inbox" class="w-6 h-6 mx-auto mb-2"></i>
-                            <p>No builds found in the last ${days} days</p>
-                        </td>
-                    </tr>
-                `;
-                lucide.createIcons();
-                return;
-            }
-
-            tbody.innerHTML = builds.map(build => {
-                const statusClass = build.status === 'SUCCESS'
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                    : build.status === 'FAILURE'
-                        ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                        : 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-
-                return `
-                    <tr class="hover:bg-slate-800/30 transition-colors">
-                        <td class="py-3 px-4">
-                            <span class="font-mono text-sm text-white">#${build.buildNumber}</span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="text-sm text-slate-300">${build.jobName}</span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${statusClass}">
-                                ${build.status}
-                            </span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="text-sm text-slate-300">${this.formatDuration(build.durationMs)}</span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="text-sm text-slate-400">${this.formatTimestamp(build.timestamp)}</span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-        } catch (error) {
-            console.error('Error loading build history:', error);
-            document.getElementById('build-history-table').innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center py-8 text-red-400">
-                        <p>Failed to load build history</p>
-                    </td>
-                </tr>
-            `;
-        }
-    }
-
-    async loadMetricsTimeline(hours = 24) {
-        try {
-            const response = await fetch(`/api/analytics/metrics/history?hours=${hours}`);
-            if (!response.ok) throw new Error('Failed to fetch metrics');
-
-            const metrics = await response.json();
-
-            const ctx = document.getElementById('metricsTimelineChart');
-            if (!ctx) return;
-
-            // Destroy existing chart
-            if (this.charts.metricsTimeline) {
-                this.charts.metricsTimeline.destroy();
-            }
-
-            this.charts.metricsTimeline = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: metrics.map(m => new Date(m.recordedAt).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })),
-                    datasets: [
-                        {
-                            label: 'CPU Usage (%)',
-                            data: metrics.map(m => (m.cpuUsage * 100).toFixed(2)),
-                            borderColor: 'rgb(168, 85, 247)',
-                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Memory Usage (%)',
-                            data: metrics.map(m => (m.memoryUsage * 100).toFixed(2)),
-                            borderColor: 'rgb(34, 197, 94)',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            yAxisID: 'y'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: '#cbd5e1',
-                                padding: 15,
-                                font: {
-                                    size: 12
-                                }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                            titleColor: '#fff',
-                            bodyColor: '#cbd5e1',
-                            borderColor: 'rgba(148, 163, 184, 0.2)',
-                            borderWidth: 1,
-                            padding: 12
-                        }
-                    },
-                    scales: {
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            beginAtZero: true,
-                            max: 100,
-                            grid: {
-                                color: 'rgba(148, 163, 184, 0.1)'
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                callback: (value) => value + '%'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
-                    }
-                }
-            });
-
-        } catch (error) {
-            console.error('Error loading metrics timeline:', error);
-        }
-    }
-
-    async loadCurrentMetrics() {
-        try {
-            const response = await fetch('/actuator/prometheus');
-            const text = await response.text();
-
-            const metrics = this.parsePrometheusMetrics(text);
-
-            // Update KPI cards
-            const cpuUsage = (metrics.system_cpu_usage || 0) * 100;
-            const memoryUsed = metrics.jvm_memory_used_bytes || 0;
-            const memoryMax = metrics.jvm_memory_max_bytes || 1;
-            const memoryUsage = (memoryUsed / memoryMax) * 100;
-            const threads = metrics.jvm_threads_live || 0;
-
-            document.getElementById('kpi-cpu-usage').textContent = cpuUsage.toFixed(1) + '%';
-            document.getElementById('kpi-memory').textContent = memoryUsage.toFixed(1) + '%';
-            document.getElementById('kpi-threads').textContent = Math.round(threads);
-
-        } catch (error) {
-            console.error('Error loading current metrics:', error);
-        }
-    }
-
-    parsePrometheusMetrics(text) {
-        const metrics = {};
-        const lines = text.split('\n');
-
-        lines.forEach(line => {
-            if (line.startsWith('#') || !line.trim()) return;
-            const match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*(?:\{[^}]*\})?) (.+)$/);
-            if (match) {
-                const name = match[1].split('{')[0];
-                const value = parseFloat(match[2]);
-                if (!isNaN(value) && value >= 0) {
-                    if (!metrics[name] || value > metrics[name]) {
-                        metrics[name] = value;
-                    }
-                }
-            }
-        });
-
-        return metrics;
-    }
-
-    formatDuration(ms) {
-        if (!ms || ms === 0) return '0s';
-        const seconds = Math.floor(ms / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-
-        if (hours > 0) {
-            return `${hours}h ${minutes % 60}m`;
-        } else if (minutes > 0) {
-            return `${minutes}m ${seconds % 60}s`;
-        } else {
-            return `${seconds}s`;
-        }
-    }
-
-    formatTimestamp(timestamp) {
-        if (!timestamp) return 'Unknown';
-        const date = new Date(timestamp);
-        return date.toLocaleString('en-IN', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-    }
-
-    toggleFullscreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
-    }
-
-    startAutoRefresh() {
-        // Refresh every 30 seconds
-        this.refreshInterval = setInterval(() => {
-            this.loadDashboardData();
-        }, 30000);
-    }
-
-    showToast(type, title, message) {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-
-        const colors = {
-            success: 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400',
-            error: 'bg-red-500/20 border-red-500/50 text-red-400',
-            warning: 'bg-amber-500/20 border-amber-500/50 text-amber-400',
-            info: 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-        };
-
-        const iconPaths = {
-            success: '<path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="10"></circle>',
-            error: '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>',
-            warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>',
-            info: '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>'
-        };
-
-        toast.className = `flex items-center gap-3 p-4 rounded-xl border backdrop-blur-sm shadow-lg ${colors[type] || colors.info} animate-fade-in`;
-
-        toast.innerHTML = `
-            <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                ${iconPaths[type] || iconPaths.info}
-            </svg>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium">${title}</p>
-                <p class="text-xs opacity-80">${message}</p>
-            </div>
-            <button onclick="this.parentElement.remove()" class="p-1 hover:bg-white/10 rounded transition-colors">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        `;
-
-        container.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100%)';
-            toast.style.transition = 'all 0.3s ease-out';
-            setTimeout(() => toast.remove(), 300);
-        }, 4000);
+        console.log('✅ Dashboard data loaded successfully');
+    } catch (error) {
+        console.error('❌ Error loading dashboard:', error);
+        showNotification('Failed to load dashboard data', 'error');
     }
 }
+
+// Load KPI metrics
+async function loadKPIMetrics() {
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/api/metrics/realtime`);
+        const metrics = await response.json();
+
+        // Update CPU
+        const cpuPercent = (metrics.cpuUsage * 100).toFixed(1);
+        document.getElementById('cpuValue').textContent = `${cpuPercent}%`;
+        document.getElementById('cpuBar').style.width = `${cpuPercent}%`;
+        updateTrendIndicator('cpuTrend', cpuPercent, 70);
+
+        // Update Memory
+        const memoryPercent = (metrics.memoryUsage * 100).toFixed(1);
+        document.getElementById('memoryValue').textContent = `${memoryPercent}%`;
+        document.getElementById('memoryBar').style.width = `${memoryPercent}%`;
+        updateTrendIndicator('memoryTrend', memoryPercent, 80);
+
+        // Update Thread Count
+        document.getElementById('threadCount').textContent = metrics.threadCount || 0;
+
+    } catch (error) {
+        console.error('Error loading KPI metrics:', error);
+    }
+}
+
+// Load system metrics for charts
+async function loadSystemMetrics() {
+    try {
+        const hours = document.getElementById('timeRange').value;
+        const response = await fetch(`${CONFIG.API_BASE_URL}/api/metrics/history?hours=${hours}`);
+        const metricsHistory = await response.json();
+
+        if (metricsHistory && metricsHistory.length > 0) {
+            updateSystemChart(metricsHistory);
+            updateHttpChart(metricsHistory);
+        }
+    } catch (error) {
+        console.error('Error loading system metrics:', error);
+    }
+}
+
+// Load build statistics
+async function loadBuildStatistics() {
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/api/analytics/builds/statistics`);
+        const stats = await response.json();
+
+        // Update Total Builds
+        document.getElementById('totalBuilds').textContent = stats.totalBuilds || 0;
+
+        // Update Success Rate
+        const successRate = stats.successRate || 0;
+        document.getElementById('successRate').textContent = `${successRate.toFixed(1)}%`;
+        document.getElementById('successBar').style.width = `${successRate}%`;
+
+        // Update Status Chart
+        if (stats.statusBreakdown) {
+            updateStatusChart(stats.statusBreakdown);
+        }
+
+    } catch (error) {
+        console.error('Error loading build statistics:', error);
+    }
+}
+
+// Load recent builds
+async function loadRecentBuilds() {
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/api/analytics/builds/recent?limit=20`);
+        const builds = await response.json();
+
+        allBuilds = builds;
+        renderBuildsTable(builds);
+        updateBuildTrendsChart(builds);
+
+    } catch (error) {
+        console.error('Error loading recent builds:', error);
+    }
+}
+
+// Initialize all charts
+function initializeCharts() {
+    // System Resources Chart
+    const systemCtx = document.getElementById('systemChart').getContext('2d');
+    charts.system = new Chart(systemCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'CPU Usage (%)',
+                    data: [],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Memory Usage (%)',
+                    data: [],
+                    borderColor: 'rgb(168, 85, 247)',
+                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function (value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // HTTP Requests Chart
+    const httpCtx = document.getElementById('httpChart').getContext('2d');
+    charts.http = new Chart(httpCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Total Requests',
+                data: [],
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Build Trends Chart
+    const trendsCtx = document.getElementById('buildTrendsChart').getContext('2d');
+    charts.buildTrends = new Chart(trendsCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Builds',
+                data: [],
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderColor: 'rgb(59, 130, 246)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    charts.status = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    'rgb(16, 185, 129)',
+                    'rgb(239, 68, 68)',
+                    'rgb(245, 158, 11)'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+}
+
+// Update System Chart
+function updateSystemChart(metricsHistory) {
+    const labels = metricsHistory.map(m => formatTime(m.recordedAt)).reverse();
+    const cpuData = metricsHistory.map(m => (m.cpuUsage * 100).toFixed(2)).reverse();
+    const memoryData = metricsHistory.map(m => (m.memoryUsage * 100).toFixed(2)).reverse();
+
+    charts.system.data.labels = labels;
+    charts.system.data.datasets[0].data = cpuData;
+    charts.system.data.datasets[1].data = memoryData;
+    charts.system.update('none');
+}
+
+// Update HTTP Chart
+function updateHttpChart(metricsHistory) {
+    const labels = metricsHistory.map(m => formatTime(m.recordedAt)).reverse();
+    const httpData = metricsHistory.map(m => m.httpRequestsTotal || 0).reverse();
+
+    charts.http.data.labels = labels;
+    charts.http.data.datasets[0].data = httpData;
+    charts.http.update('none');
+}
+
+// Update Build Trends Chart
+function updateBuildTrendsChart(builds) {
+    // Group builds by date
+    const buildsByDate = {};
+    builds.forEach(build => {
+        const date = new Date(build.timestamp).toLocaleDateString();
+        buildsByDate[date] = (buildsByDate[date] || 0) + 1;
+    });
+
+    const labels = Object.keys(buildsByDate).slice(-10);
+    const data = labels.map(date => buildsByDate[date]);
+
+    charts.buildTrends.data.labels = labels;
+    charts.buildTrends.data.datasets[0].data = data;
+    charts.buildTrends.update('none');
+}
+
+// Update Status Chart
+function updateStatusChart(statusBreakdown) {
+    const labels = Object.keys(statusBreakdown);
+    const data = Object.values(statusBreakdown);
+
+    charts.status.data.labels = labels;
+    charts.status.data.datasets[0].data = data;
+    charts.status.update('none');
+}
+
+// Render builds table
+function renderBuildsTable(builds) {
+    const tbody = document.getElementById('buildsTableBody');
+    tbody.innerHTML = '';
+
+    if (builds.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No builds found</td></tr>';
+        return;
+    }
+
+    builds.forEach(build => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 transition';
+
+        const statusClass = getStatusClass(build.status);
+        const statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold ${statusClass}">${build.status}</span>`;
+
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${build.jobName}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#${build.buildNumber}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">${statusBadge}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDuration(build.durationMs)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDateTime(build.timestamp)}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+// Filter builds
+function filterBuilds(searchTerm) {
+    const filtered = allBuilds.filter(build =>
+        build.jobName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        build.buildNumber.toString().includes(searchTerm) ||
+        build.status.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    renderBuildsTable(filtered);
+}
+
+// Export builds to CSV
+function exportBuildsToCSV() {
+    const headers = ['Job Name', 'Build Number', 'Status', 'Duration (ms)', 'Timestamp'];
+    const rows = allBuilds.map(build => [
+        build.jobName,
+        build.buildNumber,
+        build.status,
+        build.durationMs,
+        build.timestamp
+    ]);
+
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csv += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `builds_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+
+    showNotification('Builds exported successfully', 'success');
+}
+
+// Utility functions
+function getStatusClass(status) {
+    const statusMap = {
+        'SUCCESS': 'bg-green-100 text-green-800',
+        'FAILURE': 'bg-red-100 text-red-800',
+        'UNSTABLE': 'bg-yellow-100 text-yellow-800',
+        'ABORTED': 'bg-gray-100 text-gray-800'
+    };
+    return statusMap[status] || 'bg-gray-100 text-gray-800';
+}
+
+function formatDuration(ms) {
+    if (!ms) return '--';
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return minutes > 0 ? `${minutes}m ${remainingSeconds}s` : `${seconds}s`;
+}
+
+function formatDateTime(timestamp) {
+    if (!timestamp) return '--';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return '--';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function updateTrendIndicator(elementId, value, threshold) {
+    const element = document.getElementById(elementId);
+    if (value > threshold) {
+        element.innerHTML = '<span class="text-red-500">↑</span>';
+    } else {
+        element.innerHTML = '<span class="text-green-500">↓</span>';
+    }
+}
+
+function updateLastUpdateTime() {
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+}
+
+function showNotification(message, type = 'info') {
+    // Simple notification - can be enhanced with a library
+    console.log(`[${type.toUpperCase()}] ${message}`);
+}
+
+// Auto-refresh
+function startAutoRefresh() {
+    refreshInterval = setInterval(() => {
+        console.log('🔄 Auto-refreshing dashboard...');
+        loadDashboardData();
+    }, CONFIG.REFRESH_INTERVAL);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    stopAutoRefresh();
+});

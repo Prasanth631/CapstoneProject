@@ -1,273 +1,325 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CI/CD Dashboard - Enterprise Analytics</title>
+    <title>DevOps Analytics Dashboard - Enterprise</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'slide-up': 'slideUp 0.5s ease-out',
-                        'fade-in': 'fadeIn 0.3s ease-in'
-                    },
-                    keyframes: {
-                        slideUp: {
-                            '0%': { transform: 'translateY(20px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' }
-                        },
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' }
-                        }
-                    }
-                }
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+        
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
             }
         }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        .glass-effect {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(148, 163, 184, 0.1);
+        
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
         }
         
-        .gradient-border {
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+        
+        .chart-container {
             position: relative;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            height: 300px;
         }
         
-        .gradient-border::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            padding: 1px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.5));
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
+        .status-success {
+            background-color: #10b981;
+        }
+        
+        .status-failure {
+            background-color: #ef4444;
+        }
+        
+        .status-unstable {
+            background-color: #f59e0b;
+        }
+        
+        .theme-toggle {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(180deg);
         }
     </style>
 </head>
-
-<body class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 min-h-screen font-sans">
-
-    <!-- Navigation -->
-    <header class="border-b border-slate-800/50 glass-effect sticky top-0 z-50">
-        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                        <i data-lucide="activity" class="w-5 h-5 text-white"></i>
-                    </div>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i data-lucide="activity" class="w-8 h-8"></i>
                     <div>
-                        <h1 class="text-lg font-bold text-white">CI/CD Analytics Dashboard</h1>
-                        <p class="text-xs text-slate-400">Enterprise Monitoring & Insights</p>
+                        <h1 class="text-2xl font-bold">DevOps Analytics Dashboard</h1>
+                        <p class="text-sm opacity-90">Real-time Monitoring & Analytics</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button id="refresh-all" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 transition-all text-sm">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="pulse-dot w-2 h-2 bg-green-400 rounded-full"></span>
+                        <span class="text-sm">Live</span>
+                    </div>
+                    <button id="refreshBtn" class="px-4 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition flex items-center space-x-2">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                        <span class="hidden sm:inline">Refresh</span>
+                        <span>Refresh</span>
                     </button>
-                    <button id="fullscreen-btn" class="p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 transition-all">
-                        <i data-lucide="maximize-2" class="w-4 h-4"></i>
-                    </button>
+                    <select id="timeRange" class="px-4 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition text-white">
+                        <option value="1">Last Hour</option>
+                        <option value="6">Last 6 Hours</option>
+                        <option value="24" selected>Last 24 Hours</option>
+                        <option value="168">Last 7 Days</option>
+                    </select>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
         <!-- KPI Cards -->
-        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Total Builds -->
-            <div class="gradient-border rounded-2xl p-6 animate-slide-up">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <!-- CPU Usage Card -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                        <i data-lucide="layers" class="w-6 h-6 text-blue-400"></i>
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i data-lucide="cpu" class="w-6 h-6 text-blue-600"></i>
                     </div>
-                    <span class="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">Total</span>
+                    <span id="cpuTrend" class="text-sm font-semibold"></span>
                 </div>
-                <h3 class="text-3xl font-bold text-white mb-1" id="kpi-total-builds">0</h3>
-                <p class="text-sm text-slate-400">Total Builds</p>
-                <div class="mt-3 flex items-center gap-2 text-xs">
-                    <span class="text-emerald-400" id="kpi-builds-trend">+0%</span>
-                    <span class="text-slate-500">vs last period</span>
+                <h3 class="text-gray-500 text-sm font-medium">CPU Usage</h3>
+                <p id="cpuValue" class="text-3xl font-bold text-gray-800 mt-2">--</p>
+                <div class="mt-2 bg-gray-200 rounded-full h-2">
+                    <div id="cpuBar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
 
-            <!-- Success Rate -->
-            <div class="gradient-border rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.1s">
+            <!-- Memory Usage Card -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                        <i data-lucide="check-circle" class="w-6 h-6 text-emerald-400"></i>
+                    <div class="p-3 bg-purple-100 rounded-lg">
+                        <i data-lucide="hard-drive" class="w-6 h-6 text-purple-600"></i>
                     </div>
-                    <span class="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Rate</span>
+                    <span id="memoryTrend" class="text-sm font-semibold"></span>
                 </div>
-                <h3 class="text-3xl font-bold text-white mb-1" id="kpi-success-rate">0%</h3>
-                <p class="text-sm text-slate-400">Success Rate</p>
-                <div class="mt-3 flex items-center gap-2 text-xs">
-                    <div class="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500" id="success-rate-bar" style="width: 0%"></div>
-                    </div>
+                <h3 class="text-gray-500 text-sm font-medium">Memory Usage</h3>
+                <p id="memoryValue" class="text-3xl font-bold text-gray-800 mt-2">--</p>
+                <div class="mt-2 bg-gray-200 rounded-full h-2">
+                    <div id="memoryBar" class="bg-purple-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
 
-            <!-- Avg Duration -->
-            <div class="gradient-border rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.2s">
+            <!-- Total Builds Card -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                        <i data-lucide="clock" class="w-6 h-6 text-amber-400"></i>
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i data-lucide="package" class="w-6 h-6 text-green-600"></i>
                     </div>
-                    <span class="text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">Avg</span>
                 </div>
-                <h3 class="text-3xl font-bold text-white mb-1" id="kpi-avg-duration">0s</h3>
-                <p class="text-sm text-slate-400">Avg Build Time</p>
-                <div class="mt-3 flex items-center gap-2 text-xs">
-                    <span class="text-amber-400" id="kpi-duration-trend">±0%</span>
-                    <span class="text-slate-500">vs last period</span>
-                </div>
+                <h3 class="text-gray-500 text-sm font-medium">Total Builds</h3>
+                <p id="totalBuilds" class="text-3xl font-bold text-gray-800 mt-2">--</p>
+                <p class="text-sm text-gray-500 mt-2">All time</p>
             </div>
 
-            <!-- System Health -->
-            <div class="gradient-border rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.3s">
+            <!-- Success Rate Card -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                        <i data-lucide="cpu" class="w-6 h-6 text-purple-400"></i>
-                    </div>
-                    <span class="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">Live</span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1" id="kpi-cpu-usage">0%</h3>
-                <p class="text-sm text-slate-400">CPU Usage</p>
-                <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                        <span class="text-slate-500">Memory:</span>
-                        <span class="text-white ml-1" id="kpi-memory">0%</span>
-                    </div>
-                    <div>
-                        <span class="text-slate-500">Threads:</span>
-                        <span class="text-white ml-1" id="kpi-threads">0</span>
+                    <div class="p-3 bg-emerald-100 rounded-lg">
+                        <i data-lucide="check-circle" class="w-6 h-6 text-emerald-600"></i>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- Charts Row -->
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Build Trend Chart -->
-            <div class="glass-effect rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 class="text-lg font-semibold text-white">Build Trends</h2>
-                        <p class="text-xs text-slate-400 mt-1">Last 10 builds performance</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button class="p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Refresh">
-                            <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-400"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="h-64">
-                    <canvas id="buildTrendChart"></canvas>
+                <h3 class="text-gray-500 text-sm font-medium">Success Rate</h3>
+                <p id="successRate" class="text-3xl font-bold text-gray-800 mt-2">--</p>
+                <div class="mt-2 bg-gray-200 rounded-full h-2">
+                    <div id="successBar" class="bg-emerald-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
 
-            <!-- Success/Failure Distribution -->
-            <div class="glass-effect rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 class="text-lg font-semibold text-white">Build Status Distribution</h2>
-                        <p class="text-xs text-slate-400 mt-1">Success vs Failure ratio</p>
+            <!-- Thread Count Card -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-orange-100 rounded-lg">
+                        <i data-lucide="layers" class="w-6 h-6 text-orange-600"></i>
                     </div>
                 </div>
-                <div class="h-64">
-                    <canvas id="statusDistributionChart"></canvas>
+                <h3 class="text-gray-500 text-sm font-medium">Active Threads</h3>
+                <p id="threadCount" class="text-3xl font-bold text-gray-800 mt-2">--</p>
+                <p class="text-sm text-gray-500 mt-2">JVM threads</p>
+            </div>
+        </div>
+
+        <!-- Real-Time Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- CPU & Memory Chart -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">System Resources</h2>
+                    <i data-lucide="trending-up" class="w-5 h-5 text-gray-500"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="systemChart"></canvas>
                 </div>
             </div>
-        </section>
+
+            <!-- HTTP Requests Chart -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">HTTP Requests</h2>
+                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-gray-500"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="httpChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Build Analytics Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Build Trends Chart -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Build Trends</h2>
+                    <i data-lucide="git-branch" class="w-5 h-5 text-gray-500"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="buildTrendsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Build Status Distribution -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Build Status Distribution</h2>
+                    <i data-lucide="pie-chart" class="w-5 h-5 text-gray-500"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
 
         <!-- Build History Table -->
-        <section class="glass-effect rounded-2xl p-6">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-white">Recent Build History</h2>
-                    <p class="text-xs text-slate-400 mt-1">Latest builds from database</p>
+                <h2 class="text-xl font-bold text-gray-800">Recent Builds</h2>
+                <div class="flex items-center space-x-4">
+                    <input type="text" id="searchBuilds" placeholder="Search builds..." class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="exportBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Export</span>
+                    </button>
                 </div>
-                <select id="history-filter" class="px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm text-white">
-                    <option value="7">Last 7 days</option>
-                    <option value="14">Last 14 days</option>
-                    <option value="30">Last 30 days</option>
-                </select>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-slate-800">
-                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Build #</th>
-                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Job Name</th>
-                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Status</th>
-                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Duration</th>
-                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">Timestamp</th>
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Build #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
                         </tr>
                     </thead>
-                    <tbody id="build-history-table" class="divide-y divide-slate-800">
-                        <tr>
-                            <td colspan="5" class="text-center py-8 text-slate-500">
-                                <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
-                                <p>Loading build history...</p>
-                            </td>
-                        </tr>
+                    <tbody id="buildsTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Populated by JavaScript -->
                     </tbody>
                 </table>
             </div>
-        </section>
+        </div>
 
-        <!-- System Metrics Timeline -->
-        <section class="glass-effect rounded-2xl p-6">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-white">System Metrics Timeline</h2>
-                    <p class="text-xs text-slate-400 mt-1">CPU & Memory usage over time</p>
+        <!-- System Health Status -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">System Health</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <i data-lucide="check-circle" class="w-12 h-12 text-green-600 mx-auto mb-2"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Application</h3>
+                    <p id="appStatus" class="text-green-600 font-medium">Healthy</p>
                 </div>
-                <select id="metrics-timeframe" class="px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm text-white">
-                    <option value="6">Last 6 hours</option>
-                    <option value="12">Last 12 hours</option>
-                    <option value="24" selected>Last 24 hours</option>
-                </select>
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <i data-lucide="database" class="w-12 h-12 text-blue-600 mx-auto mb-2"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Database</h3>
+                    <p id="dbStatus" class="text-blue-600 font-medium">Connected</p>
+                </div>
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <i data-lucide="activity" class="w-12 h-12 text-purple-600 mx-auto mb-2"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Monitoring</h3>
+                    <p id="monitoringStatus" class="text-purple-600 font-medium">Active</p>
+                </div>
             </div>
-            <div class="h-64">
-                <canvas id="metricsTimelineChart"></canvas>
-            </div>
-        </section>
-
+        </div>
     </main>
 
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <p class="text-gray-600 text-sm">© 2026 DevOps Analytics Dashboard - Enterprise Edition</p>
+                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <span>Last Updated: <span id="lastUpdate">--</span></span>
+                    <span>Auto-refresh: <span id="autoRefreshStatus">30s</span></span>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script src="index.js"></script>
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
-        
-        // Initialize dashboard
-        window.app = new Dashboard();
     </script>
-
 </body>
-
 </html>

@@ -106,12 +106,16 @@ public class AnalyticsController {
             summary.put("buildStatistics", buildStats);
 
             // Recent builds
-            List<BuildHistory> recentBuilds = buildHistoryService.getRecentBuilds(5);
+            List<BuildHistory> recentBuilds = buildHistoryService.getRecentBuilds(10);
             summary.put("recentBuilds", recentBuilds);
 
             // Metrics statistics
             Map<String, Object> metricsStats = systemMetricsService.getMetricsStatistics(24);
             summary.put("metricsStatistics", metricsStats);
+
+            // Recent metrics for charts
+            List<SystemMetrics> recentMetrics = systemMetricsService.getMetricsFromLastHours(1);
+            summary.put("recentMetrics", recentMetrics);
 
             return ResponseEntity.ok(summary);
         } catch (Exception e) {
@@ -119,6 +123,60 @@ public class AnalyticsController {
             error.put("error", "Failed to fetch dashboard summary");
             error.put("message", e.getMessage());
             return ResponseEntity.internalServerError().body(error);
+        }
+    }
+
+    /**
+     * Get build trends for visualization
+     */
+    @GetMapping("/builds/trends")
+    public ResponseEntity<Map<String, Object>> getBuildTrends(@RequestParam(defaultValue = "30") int days) {
+        try {
+            List<BuildHistory> builds = buildHistoryService.getBuildsFromLastDays(days);
+
+            Map<String, Object> trends = new HashMap<>();
+            trends.put("totalBuilds", builds.size());
+            trends.put("builds", builds);
+
+            // Calculate daily build counts
+            Map<String, Long> dailyCounts = new HashMap<>();
+            for (BuildHistory build : builds) {
+                String date = build.getTimestamp().toLocalDate().toString();
+                dailyCounts.put(date, dailyCounts.getOrDefault(date, 0L) + 1);
+            }
+            trends.put("dailyCounts", dailyCounts);
+
+            return ResponseEntity.ok(trends);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Get performance metrics
+     */
+    @GetMapping("/performance/metrics")
+    public ResponseEntity<Map<String, Object>> getPerformanceMetrics() {
+        try {
+            Map<String, Object> performance = new HashMap<>();
+
+            // Get recent metrics
+            List<SystemMetrics> recent = systemMetricsService.getMetricsFromLastHours(1);
+            if (!recent.isEmpty()) {
+                SystemMetrics latest = recent.get(0);
+                performance.put("currentCpu", latest.getCpuUsage() * 100);
+                performance.put("currentMemory", latest.getMemoryUsage() * 100);
+                performance.put("currentThreads", latest.getThreadCount());
+            }
+
+            // Get statistics
+            Map<String, Object> stats = systemMetricsService.getMetricsStatistics(24);
+            performance.put("averageCpu", stats.get("averageCpuUsage"));
+            performance.put("averageMemory", stats.get("averageMemoryUsage"));
+
+            return ResponseEntity.ok(performance);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
     }
 }
