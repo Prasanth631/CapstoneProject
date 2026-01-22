@@ -115,8 +115,8 @@ pipeline {
                             kubectl apply -f k8s/deployment.yaml --namespace=${K8S_NAMESPACE}
                             
                             echo.
-                            echo Restarting deployment to pick up changes...
-                            kubectl rollout restart deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
+                            echo Updating deployment image to build %BUILD_NUMBER%...
+                            kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=%DOCKER_IMAGE%:%BUILD_NUMBER% --namespace=${K8S_NAMESPACE}
                             
                             echo.
                             echo Waiting for rollout to complete...
