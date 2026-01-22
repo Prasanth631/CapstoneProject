@@ -50,18 +50,33 @@ pipeline {
         // ============================================
         // STAGE 3: DOCKER BUILD (LOCAL ONLY)
         // ============================================
-        stage('Docker Build') {
+        // ============================================
+        // STAGE 3: DOCKER BUILD & PUSH
+        // ============================================
+        stage('Docker Build & Push') {
             steps {
                 echo '========================================='
-                echo 'Stage 3: Docker Build (Local)'
+                echo 'Stage 3: Docker Build & Push'
                 echo '========================================='
                 script {
-                    // Build Docker image locally
-                    bat """
-                        docker build -t %DOCKER_IMAGE%:latest .
-                    """
-                    echo "Docker image built locally: ${DOCKER_IMAGE}:latest"
-                    echo "Note: Skipping Docker Hub push (configure credentials to enable)"
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        bat """
+                            @echo off
+                            echo Logging into Docker Hub...
+                            docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%
+                            
+                            echo Building Docker image...
+                            docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
+                            docker tag %DOCKER_IMAGE%:%BUILD_NUMBER% %DOCKER_IMAGE%:latest
+                            
+                            echo Pushing Docker image...
+                            docker push %DOCKER_IMAGE%:%BUILD_NUMBER%
+                            docker push %DOCKER_IMAGE%:latest
+                            
+                            echo Logout...
+                            docker logout
+                        """
+                    }
                 }
             }
         }
