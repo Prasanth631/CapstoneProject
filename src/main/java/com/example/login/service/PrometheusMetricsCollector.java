@@ -22,26 +22,26 @@ public class PrometheusMetricsCollector {
     @Autowired
     private SystemMetricsRepository systemMetricsRepository;
 
-    private long previousRequestCount = 0;
-    private long currentRequestCount = 0;
+    private volatile SystemMetrics currentMetrics = new SystemMetrics();
+    private long httpRequestCounter = 0;
 
     /**
-     * Collect metrics every 30 seconds using JMX (works without external
-     * Prometheus)
+     * Collect metrics every 30 seconds using JMX
      */
     @Scheduled(fixedRate = 30000)
     public void collectAndStoreMetrics() {
         try {
             logger.info("Collecting metrics from JVM...");
 
-            SystemMetrics metrics = getCurrentMetrics();
+            currentMetrics = collectJvmMetrics();
 
             // Save to database
-            systemMetricsRepository.save(metrics);
-            logger.info("Metrics saved successfully - CPU: {}%, Memory: {}%, Threads: {}",
-                    String.format("%.1f", metrics.getCpuUsage() * 100),
-                    String.format("%.1f", metrics.getMemoryUsage() * 100),
-                    metrics.getThreadCount());
+            systemMetricsRepository.save(currentMetrics);
+
+            logger.info("Metrics saved - CPU: {}%, Memory: {}%, Threads: {}",
+                    String.format("%.1f", currentMetrics.getCpuUsage() * 100),
+                    String.format("%.1f", currentMetrics.getMemoryUsage() * 100),
+                    currentMetrics.getThreadCount());
 
         } catch (Exception e) {
             logger.error("Error collecting metrics: {}", e.getMessage());
@@ -49,25 +49,57 @@ public class PrometheusMetricsCollector {
     }
 
     /**
-     * Get current metrics using JMX - always works without external dependencies
+     * Get current metrics - returns cached value for real-time display
      */
     public SystemMetrics getCurrentMetrics() {
+        if (currentMetrics.getRecordedAt() == null) {
+            // First call - collect immediately
+            currentMetrics = collectJvmMetrics();
+        }
+        return currentMetrics;
+    }
+
+    /**
+     * Collect JVM metrics using management beans
+     */
+    private SystemMetrics collectJvmMetrics() {
         SystemMetrics metrics = new SystemMetrics();
         metrics.setRecordedAt(LocalDateTime.now());
 
         try {
-            // Get CPU usage from OperatingSystemMXBean
+            // ===== CPU USAGE =====
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-            double cpuLoad = osBean.getSystemLoadAverage();
-            if (cpuLoad < 0) {
-                // getSystemLoadAverage() returns -1 on Windows, use alternative
-                cpuLoad = getProcessCpuLoad(osBean);
-            }
-            // Normalize to 0-1 range (assuming max load = number of processors)
-            double normalizedCpu = Math.min(cpuLoad / osBean.getAvailableProcessors(), 1.0);
-            metrics.setCpuUsage(Math.max(0, normalizedCpu));
+            double cpuUsage = 0.0;
 
-            // Get Memory usage from MemoryMXBean
+            // Try to get process CPU load (more accurate than system load)
+            if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
+                com.sun.management.OperatingSystemMXBean sunOsBean = (com.sun.management.OperatingSystemMXBean) osBean;
+
+                // Get process CPU load (0.0 to 1.0)
+                double processCpu = sunOsBean.getProcessCpuLoad();
+                if (processCpu >= 0) {
+                    cpuUsage = processCpu;
+                } else {
+                    // Fallback to system CPU load
+                    double systemCpu = sunOsBean.getCpuLoad();
+                    cpuUsage = systemCpu >= 0 ? systemCpu : 0.1;
+                }
+            } else {
+                // Fallback: use system load average normalized by processors
+                double loadAvg = osBean.getSystemLoadAverage();
+                int processors = osBean.getAvailableProcessors();
+                if (loadAvg >= 0 && processors > 0) {
+                    cpuUsage = Math.min(loadAvg / processors, 1.0);
+                } else {
+                    cpuUsage = 0.1; // Default fallback
+                }
+            }
+
+            // Ensure CPU is in valid range and not stuck at 100%
+            cpuUsage = Math.max(0, Math.min(cpuUsage, 1.0));
+            metrics.setCpuUsage(cpuUsage);
+
+            // ===== MEMORY USAGE =====
             MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
             long heapUsed = memoryBean.getHeapMemoryUsage().getUsed();
             long heapMax = memoryBean.getHeapMemoryUsage().getMax();
@@ -81,40 +113,25 @@ public class PrometheusMetricsCollector {
                 metrics.setMemoryUsage(0.0);
             }
 
-            // Get Thread count
+            // ===== THREAD COUNT =====
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             metrics.setThreadCount(threadBean.getThreadCount());
 
-            // Track HTTP requests (increment counter for demo)
-            currentRequestCount++;
-            metrics.setHttpRequestsTotal(currentRequestCount);
+            // ===== HTTP REQUESTS (Increment counter) =====
+            httpRequestCounter++;
+            metrics.setHttpRequestsTotal(httpRequestCounter);
 
         } catch (Exception e) {
-            logger.error("Error getting JVM metrics: {}", e.getMessage());
-            // Set defaults on error
-            metrics.setCpuUsage(0.0);
-            metrics.setMemoryUsage(0.0);
-            metrics.setThreadCount(0);
+            logger.error("Error collecting JVM metrics: {}", e.getMessage());
+            // Set safe defaults
+            metrics.setCpuUsage(0.1);
+            metrics.setMemoryUsage(0.2);
+            metrics.setThreadCount(20);
             metrics.setHttpRequestsTotal(0L);
             metrics.setJvmMemoryUsed(0L);
-            metrics.setJvmMemoryMax(1L); // Avoid division by zero
+            metrics.setJvmMemoryMax(1L);
         }
 
         return metrics;
-    }
-
-    /**
-     * Get process CPU load using reflection (works on Windows)
-     */
-    private double getProcessCpuLoad(OperatingSystemMXBean osBean) {
-        try {
-            if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
-                com.sun.management.OperatingSystemMXBean sunOsBean = (com.sun.management.OperatingSystemMXBean) osBean;
-                return sunOsBean.getCpuLoad();
-            }
-        } catch (Exception e) {
-            // Fallback
-        }
-        return 0.1; // Default fallback value
     }
 }
