@@ -3,7 +3,6 @@ package com.example.login.controller;
 import com.example.login.service.PrometheusMetricsCollector;
 import com.example.login.service.SystemMetricsService;
 import com.example.login.entity.SystemMetrics;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,14 +12,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/metrics")
-@CrossOrigin(origins = "*")
 public class MetricsController {
 
-    @Autowired
-    private PrometheusMetricsCollector metricsCollector;
+    private final PrometheusMetricsCollector metricsCollector;
+    private final SystemMetricsService systemMetricsService;
 
-    @Autowired
-    private SystemMetricsService systemMetricsService;
+    public MetricsController(PrometheusMetricsCollector metricsCollector,
+            SystemMetricsService systemMetricsService) {
+        this.metricsCollector = metricsCollector;
+        this.systemMetricsService = systemMetricsService;
+    }
 
     /**
      * Get real-time metrics from Prometheus

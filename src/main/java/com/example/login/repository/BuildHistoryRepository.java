@@ -1,6 +1,7 @@
 package com.example.login.repository;
 
 import com.example.login.entity.BuildHistory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -17,6 +18,10 @@ public interface BuildHistoryRepository extends JpaRepository<BuildHistory, Long
 
     // Find the latest N builds across all jobs
     List<BuildHistory> findTop10ByOrderByTimestampDesc();
+
+    // Find latest builds with dynamic limit
+    @Query("SELECT b FROM BuildHistory b ORDER BY b.timestamp DESC")
+    List<BuildHistory> findRecentBuilds(Pageable pageable);
 
     // Find builds by status
     List<BuildHistory> findByStatus(String status);

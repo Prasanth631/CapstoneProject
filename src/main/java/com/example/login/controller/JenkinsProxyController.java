@@ -1,4 +1,4 @@
-package com.example.login;
+package com.example.login.controller;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -36,11 +35,13 @@ public class JenkinsProxyController {
     @Value("${jenkins.token}")
     private String jenkinsToken;
 
-    @Autowired(required = false)
-    private BuildHistoryService buildHistoryService;
-
+    private final BuildHistoryService buildHistoryService;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public JenkinsProxyController(BuildHistoryService buildHistoryService) {
+        this.buildHistoryService = buildHistoryService;
+    }
 
     private HttpHeaders createAuthHeaders() {
         HttpHeaders headers = new HttpHeaders();

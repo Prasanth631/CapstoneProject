@@ -2,7 +2,7 @@ package com.example.login.service;
 
 import com.example.login.entity.BuildHistory;
 import com.example.login.repository.BuildHistoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +15,11 @@ import java.util.Optional;
 @Service
 public class BuildHistoryService {
 
-    @Autowired
-    private BuildHistoryRepository repository;
+    private final BuildHistoryRepository repository;
+
+    public BuildHistoryService(BuildHistoryRepository repository) {
+        this.repository = repository;
+    }
 
     @Transactional
     public BuildHistory saveBuild(String jobName, Integer buildNumber, String status, Long durationMs,
@@ -38,7 +41,7 @@ public class BuildHistoryService {
     }
 
     public List<BuildHistory> getRecentBuilds(int limit) {
-        return repository.findTop10ByOrderByTimestampDesc();
+        return repository.findRecentBuilds(PageRequest.of(0, limit));
     }
 
     public List<BuildHistory> getBuildsByJob(String jobName) {

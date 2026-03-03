@@ -1,10 +1,17 @@
 package com.example.login.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "system_metrics")
+@Getter
+@Setter
+@NoArgsConstructor
 public class SystemMetrics {
 
     @Id
@@ -37,10 +44,6 @@ public class SystemMetrics {
         recordedAt = LocalDateTime.now();
     }
 
-    // Constructors
-    public SystemMetrics() {
-    }
-
     public SystemMetrics(Double cpuUsage, Double memoryUsage, Integer threadCount,
             Long httpRequestsTotal, Long jvmMemoryUsed, Long jvmMemoryMax) {
         this.cpuUsage = cpuUsage;
@@ -49,70 +52,5 @@ public class SystemMetrics {
         this.httpRequestsTotal = httpRequestsTotal;
         this.jvmMemoryUsed = jvmMemoryUsed;
         this.jvmMemoryMax = jvmMemoryMax;
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Double getCpuUsage() {
-        return cpuUsage;
-    }
-
-    public void setCpuUsage(Double cpuUsage) {
-        this.cpuUsage = cpuUsage;
-    }
-
-    public Double getMemoryUsage() {
-        return memoryUsage;
-    }
-
-    public void setMemoryUsage(Double memoryUsage) {
-        this.memoryUsage = memoryUsage;
-    }
-
-    public Integer getThreadCount() {
-        return threadCount;
-    }
-
-    public void setThreadCount(Integer threadCount) {
-        this.threadCount = threadCount;
-    }
-
-    public Long getHttpRequestsTotal() {
-        return httpRequestsTotal;
-    }
-
-    public void setHttpRequestsTotal(Long httpRequestsTotal) {
-        this.httpRequestsTotal = httpRequestsTotal;
-    }
-
-    public Long getJvmMemoryUsed() {
-        return jvmMemoryUsed;
-    }
-
-    public void setJvmMemoryUsed(Long jvmMemoryUsed) {
-        this.jvmMemoryUsed = jvmMemoryUsed;
-    }
-
-    public Long getJvmMemoryMax() {
-        return jvmMemoryMax;
-    }
-
-    public void setJvmMemoryMax(Long jvmMemoryMax) {
-        this.jvmMemoryMax = jvmMemoryMax;
-    }
-
-    public LocalDateTime getRecordedAt() {
-        return recordedAt;
-    }
-
-    public void setRecordedAt(LocalDateTime recordedAt) {
-        this.recordedAt = recordedAt;
     }
 }

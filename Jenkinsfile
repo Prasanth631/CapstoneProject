@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         maven 'MAVEN_HOME'
-        jdk 'JDK11'
+        jdk 'JDK17'
     }
 
     environment {
@@ -16,11 +16,11 @@ pipeline {
         K8S_NAMESPACE = 'capstone-app'
         K8S_SERVICE = 'capstone-service'
         
-        KUBECONFIG = "C:\\Users\\Prasanth Golla\\.kube\\config"
+        KUBECONFIG = credentials('kubeconfig-credential')
     }
 
     triggers {
-        pollSCM('* * * * *')
+        pollSCM('H/5 * * * *')
     }
 
     stages {
@@ -39,7 +39,7 @@ pipeline {
                 
                 // Build & Test
                 echo 'Building application with Maven...'
-                bat 'mvn clean install -DskipTests'
+                bat 'mvn clean install'
                 
                 echo 'Build & Test complete'
             }
@@ -48,10 +48,7 @@ pipeline {
         // SonarQube stage removed - using JaCoCo for coverage
 
         // ============================================
-        // STAGE 3: DOCKER BUILD (LOCAL ONLY)
-        // ============================================
-        // ============================================
-        // STAGE 3: DOCKER BUILD & PUSH
+        // STAGE 2: DOCKER BUILD & PUSH
         // ============================================
         stage('Docker Build & Push') {
             steps {
@@ -92,7 +89,6 @@ pipeline {
                 script {
                     try {
                         bat """
-                            set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                             
                             echo Verifying Kubernetes cluster...
                             kubectl cluster-info
@@ -129,7 +125,6 @@ pipeline {
                         echo 'Attempting automatic rollback...'
                         
                         bat """
-                            set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                             kubectl rollout undo deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
                             kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=120s
                         """
@@ -150,7 +145,6 @@ pipeline {
                 script {
                     try {
                         bat """
-                            set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                             
                             echo Applying Prometheus configuration...
                             kubectl apply -f k8s/prometheus-config.yaml --namespace=default
@@ -223,7 +217,6 @@ pipeline {
                     
                     // Verify Deployment Status
                     bat """
-                        set KUBECONFIG=C:\\Users\\Prasanth Golla\\.kube\\config
                         
                         echo.
                         echo ========================================

@@ -1,11 +1,10 @@
-package com.example.login;
+package com.example.login.controller;
 
 import com.example.login.entity.BuildHistory;
 import com.example.login.entity.SystemMetrics;
 import com.example.login.service.BuildHistoryService;
 import com.example.login.service.JenkinsApiService;
 import com.example.login.service.SystemMetricsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,17 +15,19 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/analytics")
-@CrossOrigin(origins = "*")
 public class AnalyticsController {
 
-    @Autowired
-    private BuildHistoryService buildHistoryService;
+    private final BuildHistoryService buildHistoryService;
+    private final SystemMetricsService systemMetricsService;
+    private final JenkinsApiService jenkinsApiService;
 
-    @Autowired
-    private SystemMetricsService systemMetricsService;
-
-    @Autowired
-    private JenkinsApiService jenkinsApiService;
+    public AnalyticsController(BuildHistoryService buildHistoryService,
+            SystemMetricsService systemMetricsService,
+            JenkinsApiService jenkinsApiService) {
+        this.buildHistoryService = buildHistoryService;
+        this.systemMetricsService = systemMetricsService;
+        this.jenkinsApiService = jenkinsApiService;
+    }
 
     /**
      * Get build statistics from Jenkins API (REAL DATA)
@@ -58,7 +59,6 @@ public class AnalyticsController {
     /**
      * Get recent builds from Jenkins API (REAL DATA)
      */
-    @SuppressWarnings("unchecked")
     @GetMapping("/builds/recent")
     public ResponseEntity<List<Map<String, Object>>> getRecentBuilds(@RequestParam(defaultValue = "20") int limit) {
         try {
@@ -157,7 +157,6 @@ public class AnalyticsController {
     /**
      * Get dashboard summary with all key metrics - USING JENKINS API
      */
-    @SuppressWarnings("unchecked")
     @GetMapping("/dashboard/summary")
     public ResponseEntity<Map<String, Object>> getDashboardSummary() {
         try {

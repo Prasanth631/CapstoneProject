@@ -1,12 +1,17 @@
-package com.example.login;
+package com.example.login.controller;
 
+import com.example.login.service.LoginService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/login")
 public class LoginController {
 
-    private final LoginService loginService = new LoginService();
+    private final LoginService loginService;
+
+    public LoginController(LoginService loginService) {
+        this.loginService = loginService;
+    }
 
     @PostMapping("/validate")
     public String validate(

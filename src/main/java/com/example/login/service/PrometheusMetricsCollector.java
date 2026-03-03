@@ -4,7 +4,6 @@ import com.example.login.entity.SystemMetrics;
 import com.example.login.repository.SystemMetricsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +19,11 @@ public class PrometheusMetricsCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(PrometheusMetricsCollector.class);
 
-    @Autowired
-    private SystemMetricsRepository systemMetricsRepository;
+    private final SystemMetricsRepository systemMetricsRepository;
+
+    public PrometheusMetricsCollector(SystemMetricsRepository systemMetricsRepository) {
+        this.systemMetricsRepository = systemMetricsRepository;
+    }
 
     private volatile SystemMetrics currentMetrics;
     private long httpRequestCounter = 0;

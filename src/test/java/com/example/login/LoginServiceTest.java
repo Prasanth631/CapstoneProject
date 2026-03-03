@@ -1,5 +1,7 @@
 package com.example.login;
 
+import com.example.login.service.LoginService;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,8 +24,7 @@ class LoginServiceTest {
                 "test@example.com",
                 "9876543210",
                 "Password@123",
-                "2000-05-20"
-        );
+                "2000-05-20");
         assertTrue(result);
     }
 
@@ -34,8 +35,7 @@ class LoginServiceTest {
                 "wrongemail",
                 "9876543210",
                 "Password@123",
-                "2000-05-20"
-        );
+                "2000-05-20");
         assertFalse(result);
     }
 
@@ -46,8 +46,7 @@ class LoginServiceTest {
                 "test@example.com",
                 "9876543210",
                 "pass",
-                "2000-05-20"
-        );
+                "2000-05-20");
         assertFalse(result);
     }
 }
