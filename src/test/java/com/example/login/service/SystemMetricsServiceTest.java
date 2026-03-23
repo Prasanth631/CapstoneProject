@@ -67,8 +67,8 @@ class SystemMetricsServiceTest {
         Map<String, Object> stats = systemMetricsService.getMetricsStatistics(24);
 
         assertNotNull(stats);
-        assertEquals(45.0, stats.get("averageCpuUsage"));
-        assertEquals(65.0, stats.get("averageMemoryUsage"));
+        assertEquals(0.45, stats.get("averageCpuUsage"));
+        assertEquals(0.65, stats.get("averageMemoryUsage"));
     }
 
     @Test
