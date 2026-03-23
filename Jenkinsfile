@@ -15,8 +15,6 @@ pipeline {
         K8S_CONTAINER = 'capstone-container'
         K8S_NAMESPACE = 'capstone-app'
         K8S_SERVICE = 'capstone-service'
-        
-        KUBECONFIG = credentials('kubeconfig-credential')
     }
 
     triggers {
@@ -88,46 +86,53 @@ pipeline {
                 echo '========================================='
                 script {
                     try {
-                        bat """
-                            
-                            echo Verifying Kubernetes cluster...
-                            kubectl cluster-info
-                            kubectl get nodes
-                            
-                            echo.
-                            echo Applying Kubernetes manifests...
-                            
-                            echo.
-                            echo Deploying PostgreSQL Database...
-                            kubectl apply -f k8s/postgres-secret.yaml --namespace=${K8S_NAMESPACE}
-                            kubectl apply -f k8s/postgres-service.yaml --namespace=${K8S_NAMESPACE}
-                            kubectl apply -f k8s/postgres-statefulset.yaml --namespace=${K8S_NAMESPACE}
-                            
-                            echo.
-                            echo Deploying Application...
-                            kubectl apply -f k8s/secrets.yaml --namespace=${K8S_NAMESPACE}
-                            kubectl apply -f k8s/configmap.yaml --namespace=${K8S_NAMESPACE}
-                            kubectl apply -f k8s/service.yaml --namespace=${K8S_NAMESPACE}
-                            kubectl apply -f k8s/deployment.yaml --namespace=${K8S_NAMESPACE}
-                            
-                            echo.
-                            echo Updating deployment image to build %BUILD_NUMBER%...
-                            kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=%DOCKER_IMAGE%:%BUILD_NUMBER% --namespace=${K8S_NAMESPACE}
-                            
-                            echo.
-                            echo Waiting for rollout to complete...
-                            kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=300s
-                        """
+                        withCredentials([file(credentialsId: 'kubeconfig-credential', variable: 'KUBECONFIG')]) {
+                            bat """
+                                echo Verifying Kubernetes cluster...
+                                kubectl cluster-info
+                                kubectl get nodes
+                                
+                                echo.
+                                echo Applying Kubernetes manifests...
+                                
+                                echo.
+                                echo Deploying PostgreSQL Database...
+                                kubectl apply -f k8s/postgres-secret.yaml --namespace=${K8S_NAMESPACE}
+                                kubectl apply -f k8s/postgres-service.yaml --namespace=${K8S_NAMESPACE}
+                                kubectl apply -f k8s/postgres-statefulset.yaml --namespace=${K8S_NAMESPACE}
+                                
+                                echo.
+                                echo Deploying Application...
+                                kubectl apply -f k8s/secrets.yaml --namespace=${K8S_NAMESPACE}
+                                kubectl apply -f k8s/configmap.yaml --namespace=${K8S_NAMESPACE}
+                                kubectl apply -f k8s/service.yaml --namespace=${K8S_NAMESPACE}
+                                kubectl apply -f k8s/deployment.yaml --namespace=${K8S_NAMESPACE}
+                                
+                                echo.
+                                echo Updating deployment image to build %BUILD_NUMBER%...
+                                kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=%DOCKER_IMAGE%:%BUILD_NUMBER% --namespace=${K8S_NAMESPACE}
+                                
+                                echo.
+                                echo Waiting for rollout to complete...
+                                kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=300s
+                            """
+                        }
                         echo 'Kubernetes deployment successful!'
                         
                     } catch (err) {
                         echo "Deployment failed! Error: ${err.message}"
                         echo 'Attempting automatic rollback...'
                         
-                        bat """
-                            kubectl rollout undo deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
-                            kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=120s
-                        """
+                        try {
+                            withCredentials([file(credentialsId: 'kubeconfig-credential', variable: 'KUBECONFIG')]) {
+                                bat """
+                                    kubectl rollout undo deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE}
+                                    kubectl rollout status deployment/${K8S_DEPLOYMENT} --namespace=${K8S_NAMESPACE} --timeout=120s
+                                """
+                            }
+                        } catch (rollbackErr) {
+                            echo "Rollback also failed: ${rollbackErr.message}"
+                        }
                         error("Deployment failed and has been rolled back")
                     }
                 }
@@ -145,7 +150,6 @@ pipeline {
                 script {
                     try {
                         bat """
-                            
                             echo Applying Prometheus configuration...
                             kubectl apply -f k8s/prometheus-config.yaml --namespace=default
                             
@@ -217,7 +221,6 @@ pipeline {
                     
                     // Verify Deployment Status
                     bat """
-                        
                         echo.
                         echo ========================================
                         echo DEPLOYMENT STATUS
