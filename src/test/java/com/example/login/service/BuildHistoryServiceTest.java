@@ -75,10 +75,10 @@ class BuildHistoryServiceTest {
 
     @Test
     void getStatistics_returnsCorrectData() {
-        List<Object[]> statusStats = Arrays.asList(
+        List<Object[]> statusStats = Arrays.<Object[]>asList(
                 new Object[] { "SUCCESS", 8L },
                 new Object[] { "FAILURE", 2L });
-        List<Object[]> durationStats = Arrays.asList(
+        List<Object[]> durationStats = Arrays.<Object[]>asList(
                 new Object[] { "test-job", 5000.0 });
         when(repository.getStatusStatistics()).thenReturn(statusStats);
         when(repository.getAverageDurationByJob()).thenReturn(durationStats);

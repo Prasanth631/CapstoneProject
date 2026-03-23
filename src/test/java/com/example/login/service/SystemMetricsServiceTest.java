@@ -51,7 +51,7 @@ class SystemMetricsServiceTest {
     @Test
     void getMetricsFromLastHours_returnsMetrics() {
         List<SystemMetrics> metrics = Arrays.asList(sampleMetrics);
-        when(repository.findByRecordedAtAfterOrderByRecordedAtDesc(any(LocalDateTime.class))).thenReturn(metrics);
+        when(repository.findMetricsSince(any(LocalDateTime.class))).thenReturn(metrics);
 
         List<SystemMetrics> result = systemMetricsService.getMetricsFromLastHours(24);
 
