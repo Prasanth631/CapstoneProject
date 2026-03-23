@@ -38,7 +38,6 @@ public class JenkinsApiService {
 
     // Cached data for when Jenkins is unreachable
     private Map<String, Object> cachedStats = new HashMap<>();
-    private List<Map<String, Object>> cachedBuilds = new ArrayList<>();
     private long lastSuccessfulFetch = 0;
 
     public JenkinsApiService() {
@@ -99,7 +98,6 @@ public class JenkinsApiService {
     /**
      * Get build statistics - with robust fallback
      */
-    @SuppressWarnings("unchecked")
     public Map<String, Object> getBuildStatistics() {
         // Try to fetch from Jenkins
         if (workingJenkinsUrl != null) {
@@ -136,7 +134,7 @@ public class JenkinsApiService {
         HttpHeaders headers = createAuthHeaders();
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+        ResponseEntity<Map<String, Object>> response = (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
         Map<String, Object> data = response.getBody();
 
         if (data == null || !data.containsKey("jobs")) {
@@ -185,8 +183,7 @@ public class JenkinsApiService {
             return tsB.compareTo(tsA);
         });
 
-        // Cache builds
-        cachedBuilds = allBuilds;
+
 
         double successRate = totalBuilds > 0 ? (successBuilds * 100.0 / totalBuilds) : 0.0;
 
